@@ -1,4 +1,6 @@
 module module_read_write
+
+  use mpi
   use module_precision
   contains
 

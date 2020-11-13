@@ -1,29 +1,58 @@
 subroutine allocate_couplings( params )
 
   implicit none
-  type(type_params), intent(inout)                    :: params
-  integer(kind=ik)                                    :: i, j, k, nsqrt
-  real(kind=rk), dimension(:), allocatable            :: gaxx, kappa
+  type(type_params), intent(inout)            :: params
+  integer(kind=ik)                            :: i, j, k, nsqrt, ierr, nmin, nextra
+  integer(kind=ik), dimension(:), allocatable :: sendcounts, displs
+  real(kind=rk), dimension(:), allocatable    :: gaxx, kappa, gaxx_tot, gaff_tot
 
-  nsqrt = int(sqrt(real(params%N)))
-  allocate(gaxx(nsqrt))
-  allocate(kappa(nsqrt))
+  allocate( gaxx_tot(params%N_tot), gaff_tot(params%N_tot) )
+  allocate( sendcounts(0:params%nprocs-1), displs(0:params%nprocs-1) )
+  if ( params%rank == 0 ) then
+    nsqrt = int(sqrt(real(params%N_tot)))
+    allocate( gaxx(nsqrt), kappa(nsqrt) )
 
-  call linspace( params%kappa_range(1), params%kappa_range(2), kappa )
-  kappa(:) = 10**kappa(:)
-  call linspace( params%gaxx_range(1), params%gaxx_range(2), gaxx)
-  gaxx(:) = 10**gaxx(:)
+    call linspace( params%kappa_range(1), params%kappa_range(2), kappa )
+    kappa(:) = 10**kappa(:)
+    call linspace( params%gaxx_range(1), params%gaxx_range(2), gaxx)
+    gaxx(:) = 10**gaxx(:)
 
-  allocate(params%gaff(params%N))
-  allocate(params%gaxx(params%N))
-
-  k = 1
-  do i=1,nsqrt
-    do j=1,nsqrt
-      params%gaxx(k) = gaxx(i)
-      params%gaff(k) = kappa(j)/gaxx(i)
-      k = k+1
+    k = 1
+    do i=1,nsqrt
+      do j=1,nsqrt
+        gaxx_tot(k) = gaxx(i)
+        gaff_tot(k) = kappa(j)/gaxx(i)
+        k = k+1
+      end do
     end do
-  end do
-  deallocate(gaxx, kappa)
+  end if
+
+  nmin = params%N_tot/params%nprocs
+  nextra = mod(params%N_tot,params%nprocs)
+  k = 0
+  do i = 0, params%nprocs-1
+     if (i < nextra) then
+        sendcounts(i) = nmin + 1
+     else
+        sendcounts(i) = nmin
+     end if
+     displs(i) = k
+     k = k + sendcounts(i)
+   end do
+   params%N  = sendcounts(params%rank)
+
+
+   allocate(params%gaff(params%N))
+   allocate(params%gaxx(params%N))
+   ! distribute couplings among different ranks
+   call MPI_Scatterv( gaxx_tot, sendcounts, displs, MPI_DOUBLE, &
+       params%gaxx, params%N, MPI_DOUBLE, &
+       0, params%BOLTZMANN_COMM, ierr)
+   call MPI_Scatterv( gaff_tot, sendcounts, displs, MPI_DOUBLE, &
+       params%gaff, params%N, MPI_DOUBLE, &
+       0, params%BOLTZMANN_COMM, ierr)
+
+  if ( params%rank == 0 ) deallocate( gaxx, kappa )
+
+  deallocate( gaxx_tot, gaff_tot, sendcounts, displs )
 end subroutine allocate_couplings

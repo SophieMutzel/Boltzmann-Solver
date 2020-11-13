@@ -1,5 +1,6 @@
 module module_rhs
 
+  use mpi
   use module_precision
   use module_params
   use module_utils

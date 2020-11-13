@@ -1,5 +1,7 @@
 module module_utils
+
   use module_precision
+  use mpi
 
   implicit none
   type type_argsint

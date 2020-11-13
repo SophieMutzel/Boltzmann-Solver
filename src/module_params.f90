@@ -1,5 +1,7 @@
 
 module module_params
+
+  use mpi
   use module_precision
   use module_read_write
   use module_utils
@@ -15,7 +17,7 @@ module module_params
     real(kind=rk), dimension(9)                  :: ncf = (/ 1., 1., 1., 3., 3., 3., 3., 3., 3. /)
 
     ! couplings
-    integer(kind=ik)                             :: N = 16
+    integer(kind=ik)                             :: N_tot = 16, N
     real(kind=rk), dimension(:), allocatable     :: gaff, gaxx
     real(kind=rk), dimension(2)                  :: kappa_range = (/ -10., -8. /), gaxx_range = (/ -10., -8. /)
 
@@ -35,6 +37,13 @@ module module_params
 
     ! effective degrees of freedom
     real(kind=rk), dimension(:,:), allocatable   :: heff, geff, heff_HS, geff_HS
+
+    ! process rank
+    integer(kind=ik)                            :: rank = -1
+    ! number of processes
+    integer(kind=ik)                            :: nprocs = -1
+    ! WABBIT communicator
+    integer(kind=ik)                            :: BOLTZMANN_COMM
 
 end type type_params
 

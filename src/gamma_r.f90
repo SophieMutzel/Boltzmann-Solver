@@ -1,8 +1,8 @@
 real(kind=rk) function gamma_r(T,params,sigma,p_f)
   implicit none
   type (type_params), intent(in)      :: params
-  real(kind=rk), intent(in)        :: T
-  real(kind=rk)                    :: mx, gam
+  real(kind=rk), intent(in)           :: T
+  real(kind=rk)                       :: mx, gam
   integer                             :: i
 
   gam = 0d0
@@ -16,6 +16,7 @@ real(kind=rk) function gamma_r(T,params,sigma,p_f)
     ncs = 1d0
   end if
   call qagi( sigma, 4d0*max(mx,mf)*max(mx,mf), 1, epsabs, epsrel, result, abserr, neval, ier )
+  ! only true for ma=mb!! (4 ways, eq. 77)
   kernel = @(s,T,mf,nc) sigma(s,params,mf,nc).*(s-4*mx.^2).*sqrt(s).*besselk(1,sqrt(s)./T);
   gam = zeros(length(mx));
 
