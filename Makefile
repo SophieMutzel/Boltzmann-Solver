@@ -7,7 +7,7 @@ OBJS := $(FFILES:%.f90=$(OBJDIR)/%.o)
 
 # Files that create modules:
 MFILES = module_precision.f90 module_params.f90 module_read_write.f90 module_utils.f90 \
-				module_cosmo.f90 module_xsecs.f90 module_rhs.f90
+				module_cosmo.f90 module_xsecs.f90 module_rhs.f90 dvode.f90
 MOBJS := $(MFILES:%.f90=$(OBJDIR)/%.o)
 
 # Source code directories (colon-separated):
@@ -68,7 +68,8 @@ $(OBJDIR)/module_params.o: module_params.f90 $(OBJDIR)/module_precision.o $(OBJD
 	ini_cons_to_params.f90 allocate_couplings.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
-$(OBJDIR)/module_cosmo.o: module_cosmo.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o
+$(OBJDIR)/module_cosmo.o: module_cosmo.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o \
+	initial_conditions.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_utils.o
@@ -76,8 +77,10 @@ $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR
 
 $(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
 	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o \
-	rhs_boltzmann.f90 RK4.f90
+	rhs_boltzmann.f90 RK4.f90 rhs_region3a2.f90 region3a_log.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
+
+$(OBJDIR)/dvode.o: dvode.f90  $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o
 
 # Compile remaining objects from Fortran files.
 $(OBJDIR)/%.o: %.f90 $(MOBJS)

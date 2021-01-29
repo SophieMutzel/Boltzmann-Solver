@@ -65,8 +65,9 @@ module module_cosmo
       call heffSM (T,params,hSM)
       call interp_linear(nd, params%geff_HS(1,:),params%geff_HS(2,:),T, gHS)
       call interp_linear(nd, params%heff_HS(1,:),params%heff_HS(2,:),T, hHS)
-      geff = gSM *(1 + hHS / hSM - sqrt(gHS) / gSM)
+      geff = gSM *(1 + hHS / hSM - 0.5_rk*gSM*gSM*gHS / hSM/hSM)
 
+      !geff2rootSM[T](1+heffHS/gsSM-1/2 geff2rootSM^2 geffHS/gsSM[T]^2)
       return
     end function geff
 
@@ -84,10 +85,17 @@ module module_cosmo
         real(kind=rk), intent(in)           :: T
         type (type_params), intent(in)      :: params
 
-        ent = 2. * pi* pi /45. * heff(T,params) * T**3
+        ent = 2. * pi* pi /45. * heff(T,params) * T*T*T
 
     end function ent
 
+    real(kind=rk) function neq( T, m, g )
+      implicit none
+      real(kind=rk), intent(in)           :: T, m, g
+
+      neq = 0.5_rk * g * T * m*m * bessK2(m/T) /pi/pi
+
+    end function neq
     real(kind=rk) function Yeq( T, params )
       implicit none
         real(kind=rk), intent(in)           :: T
@@ -95,9 +103,27 @@ module module_cosmo
         real(kind=rk)                       :: z
 
           z = params%mx/T
-          Yeq = 45. * 4. / (4. * pi**4 * heff(T,params) ) * z*z*bessK2(z)
+          Yeq = 45. * 4. / (4. * pi*pi*pi*pi * heff(T,params) ) * z*z*bessK2(z)
 
     end function Yeq
 
+    real(kind=rk) function Ta(T,params)
+      implicit none
+      real(kind=rk), intent(in)           :: T
+      type (type_params), intent(in)      :: params
+      integer(kind=ik)                    :: nd, nr
+      real(kind=rk)                       :: gHS, gSM, rar
 
+      nd = size(params%heff_HS,2)
+      ! DOFS
+      call interp_linear(nd, params%heff_HS(1,:),params%heff_HS(2,:),T, gHS)
+      call geffSM(T,params,gSM)
+      ! Axion temperature
+      nr = size(params%rhoa_rho,2)
+      call interp_linear(nr, params%rhoa_rho(1,:),params%rhoa_rho(2,:),T, rar)
+      Ta = sqrt(sqrt(( gSM*gSM/gHS *rar )))*T
+
+    end function Ta
+
+    include "initial_conditions.f90"
 end module

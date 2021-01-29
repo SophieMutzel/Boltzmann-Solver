@@ -6,6 +6,16 @@ module module_precision
 
   real(kind=rk), parameter, public   :: pi  = 4.0 * atan(1.0)
   integer(kind=ik)                   :: BOLTZMANN_COMM
+  real(kind=rk),parameter,public     :: ga=1.0_rk, ggamma=2.0_rk, gg=16.0_rk, gDM=4.0_rk
+  real(kind=rk), dimension(9)        :: mf = (/ 0.000511, 0.1057, 1.777, 0.0046, 0.096, 4.18, 0.0022, 1.28, 173.0 /)
+  real(kind=rk), dimension(9)        :: ncf = (/ 1., 1., 1., 3., 3., 3., 3., 3., 3. /)
+  real(kind=rk), dimension(9)        :: gf = (/ 4., 4., 4., 12., 12., 12., 12., 12., 12. /)
+  real(kind=rk), dimension(9)        :: qf = (/ 1., 1., 1., -1./3.,-1./3.,-1./3.,2./3.,2./3.,2./3. /)
+  real(kind=rk), parameter, public   :: T_RH=1e5_rk
+  real(kind=rk), parameter, public   :: alpha_QED = 1.0_rk/137.0_rk
+
+  ! number of rhs
+  integer(kind=ik), parameter, public :: nrhs = 2
 
   contains
   !initialize global communicator of MPI_World

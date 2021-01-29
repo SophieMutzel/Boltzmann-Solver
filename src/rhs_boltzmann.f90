@@ -1,12 +1,13 @@
 subroutine rhs_boltzmann( q, params, argsint, z, rhs )
-
+!subroutine rhs_boltzmann( q, params, argsint, z, rhs )
   implicit none
   real(kind=rk), intent(in)                         :: z
   real(kind=rk), dimension(:,:), intent(in)         :: q
   real(kind=rk), dimension(:,:), intent(inout)      :: rhs
   type (type_params), intent(in)                    :: params
   type (type_argsint), intent(inout)                :: argsint
-  real(kind=rk)                                     :: mx, g1, g2, T, gHS, mf, nc, hSM
+!  integer(kind=ik), intent(in)                      :: N
+  real(kind=rk)                                     :: mx, g1, g2, T, gHS, nc, hSM
   real(kind=rk)                                     :: result, gamma_rcon
   real(kind=rk)                                     :: epsabs, epsrel, abserr
   integer(kind=ik)                                  :: ier, i, nd, neval
@@ -26,10 +27,10 @@ subroutine rhs_boltzmann( q, params, argsint, z, rhs )
 
   integral = 0.0_rk
 
-  do i=1,size(params%mf)
-    argsint%mf = params%mf(i)
-    argsint%nc = params%ncf(i)
-    call qagi( kernel, argsint, 4.0_rk*max(mx*mx,params%mf(i)*params%mf(i)), 1,&
+  do i=1,size(mf)
+    argsint%mf = mf(i)
+    argsint%nc = ncf(i)
+    call qagi( kernel, argsint, 4.0_rk*max(mx*mx,mf(i)*mf(i)), 1,&
                 epsabs, epsrel, result, abserr, neval, ier )
     integral = integral + params%gaff*params%gaff*params%gaxx*params%gaxx * result
   end do
@@ -40,7 +41,7 @@ subroutine rhs_boltzmann( q, params, argsint, z, rhs )
   end do
 
   call gamma_r( T, params, argsint, .true., gamma_rcon)
-  
+
   rhs(1,:) = 1.0_rk/( Hub( T, params )* z *ent( T, params ) )* &
           ( params%gaff*params%gaff*params%gaxx*params%gaxx * gamma_rcon* &
           ( 1.0_rk - ( q(1,:) / Yeq(T,params) ) * ( q(1,:) / Yeq(T,params) ) ) &

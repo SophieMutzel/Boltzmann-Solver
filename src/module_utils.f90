@@ -4,7 +4,7 @@ module module_utils
   use mpi
 
   implicit none
-  type type_argsint
+  type, public :: type_argsint
     real(kind=rk)                     :: T, mf, nc, mx, ma
   end type type_argsint
 
@@ -143,6 +143,28 @@ module module_utils
       bessK2 = bk
       return
     end function bessK2
+
+    integer(kind=ik) function str2int(str)
+      implicit none
+      character(len=*), intent(in)  :: str
+
+      read(str,*)  str2int
+      return
+    end function str2int
+    character(len=2) function int2str(int)
+      implicit none
+      integer(kind=ik), intent(in)  :: int
+
+      write(int2str,'(I2)') int
+      return
+    end function int2str
+    character(len=3) function float2str(float)
+      implicit none
+      real(kind=rk), intent(in)  :: float
+
+      write(float2str,'(F1.1)') float
+      return
+    end function float2str
 
     include "quadpack.f90"
     include "interpolation.f90"

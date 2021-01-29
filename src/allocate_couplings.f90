@@ -52,6 +52,8 @@ subroutine allocate_couplings( params )
        params%gaff, params%N, MPI_DOUBLE, &
        0, params%BOLTZMANN_COMM, ierr)
 
+  params%gaxx=0.00501187_rk
+  params%gaff=1.99526e-13_rk!6.30957e-12_rk
   if ( params%rank == 0 ) deallocate( gaxx, kappa )
 
   deallocate( gaxx_tot, gaff_tot, sendcounts, displs )

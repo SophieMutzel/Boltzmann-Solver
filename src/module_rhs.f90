@@ -24,7 +24,7 @@ module module_rhs
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
 
-        kernel2_xxaa = sigma_xxaa(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma)* &
+        kernel2_xxaa = sigma_xxaa(s,argsint%mx,argsint%ma)* &
                       (s - 4.0_rk* argsint%mx * argsint%mx) * sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel2_xxaa
@@ -56,15 +56,15 @@ module module_rhs
       mx = params%mx
 
       if ( con ) then
-        do i=1, size(params%mf)
-          argsint%mf = params%mf(i)
-          argsint%nc = params%ncf(i)
-          call qagi( kernel2_xxff, argsint, 4.0_rk*max(mx*mx,params%mf(i)*params%mf(i)), &
+        do i=1, size(mf)
+          argsint%mf = mf(i)
+          argsint%nc = ncf(i)
+          call qagi( kernel2_xxff, argsint, 4.0_rk*max(mx*mx,mf(i)*mf(i)), &
                     1, epsabs, epsrel, result, abserr, neval, ier )
           gam = gam + T/2.0_rk/pi**4 * result
         end do
       else
-        argsint%mf = params%ma
+        !argsint%mf = params%ma
         argsint%nc = 1.0_rk
         !!!!!!!!!!!!!!!! check this!!!!!!!
         call qagi( kernel2_xxaa, argsint, 4.0_rk*max(mx*mx,params%ma*params%ma), &
@@ -74,6 +74,149 @@ module module_rhs
       return
     end subroutine gamma_r
 
+    subroutine gamma_r_new( T, params, argsint, sigma, gam )
+      implicit none
+      type (type_params), intent(in)        :: params
+      type (type_argsint), intent(inout)    :: argsint
+      real(kind=rk), intent(in)             :: T
+      character(len=*), intent(in)          :: sigma
+      real(kind=rk), intent(out)            :: gam
+      real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr,ma, alphas
+      integer(kind=ik)                      :: i, ier, neval, nd
+
+      epsabs = 1e-5_rk
+      epsrel = 1e-5_rk
+      mx = params%mx
+      ma = params%ma
+      gam = 0.0_rk
+      nd = size(params%alpha_s,2)
+      argsint%T=T
+      call interp_linear(nd, params%alpha_s(1,:),params%alpha_s(2,:),T, alphas)
+
+      select case(sigma)
+      case("agff")
+        do i=1, 9
+          argsint%mf = mf(i)
+          call qagi(kernel_agff,argsint,max(4.0_rk*ma*ma,4.0_rk*mf(i)*mf(i)),&
+                    1, epsabs, epsrel, result, abserr, neval, ier)
+          gam = gam + alpha_QED*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result
+        end do
+        do i=4, 9
+          argsint%mf = mf(i)
+          call qagi(kernel_agff,argsint,max(1.0_rk,max(4.0_rk*ma*ma,4.0_rk*mf(i)*mf(i))),&
+                    1, epsabs, epsrel, result, abserr, neval, ier)
+          gam = gam + 0.5_rk*alphas*ga*gg*T/(32.0_rk*pi*pi*pi*pi)*result
+        end do
+      case("afgf")
+        do i=1, 9
+          argsint%mf = mf(i)
+          call qagi(kernel_afgf,argsint,(ma+mf(i))*(ma+mf(i)),&
+                    1, epsabs, epsrel, result, abserr, neval, ier)
+          gam = gam + alpha_QED*qf(i)*qf(i)*ga*gf(i)*T/(32.0_rk*pi*pi*pi*pi)*result
+        end do
+        do i=4, 9
+          argsint%mf = mf(i)
+          call qagi(kernel_afgf,argsint,max(1.0_rk,(ma+mf(i))*(ma+mf(i))),&
+                    1, epsabs, epsrel, result, abserr, neval, ier)
+          gam = gam + 4.0_rk/3.0_rk*alphas*ga*gf(i)*T/(32.0_rk*pi*pi*pi*pi)*result
+        end do
+      case("xxff")
+        do i=1, 9
+          argsint%mf = mf(i)
+          argsint%nc = ncf(i)
+          call qagi(kernel2_xxff,argsint,max(4.0_rk*mx*mx,4.0_rk*mf(i)*mf(i)),&
+                    1, epsabs, epsrel, result, abserr, neval, ier)
+          gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
+        end do
+      case("aaxx")
+        call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1, epsabs, epsrel, result, abserr, neval, ier)
+        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
+      case("xxaa")
+        call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1, epsabs, epsrel, result, abserr, neval, ier)
+        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
+      case default
+        write(*,*) "Error! x section", sigma, "not implemented"
+      end select
+
+    end subroutine gamma_r_new
+
+    subroutine sigmav( T, params, argsint, sigma, sv )
+      implicit none
+      type (type_params), intent(in)        :: params
+      type (type_argsint), intent(inout)    :: argsint
+      real(kind=rk), intent(in)             :: T
+      character(len=*), intent(in)          :: sigma
+      real(kind=rk), intent(out)            :: sv
+      real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr,ma
+      integer(kind=ik)                      :: i, ier, neval
+
+      epsabs = 1e-5_rk
+      epsrel = 1e-5_rk
+      mx = params%mx
+      ma = params%ma
+      argsint%T=T
+
+      select case(sigma)
+      case("aaxx")
+          call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                1, epsabs, epsrel, result, abserr, neval, ier)
+          sv = result/4.0_rk/(2.0_rk*T*ma*ma*ma*ma*bessK2(ma/T)* bessK2(ma/T))
+        case("xxaa")
+          call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                1, epsabs, epsrel, result, abserr, neval, ier)
+          sv = result/4.0_rk/(2.0_rk*T*mx*mx*mx*mx* bessK2(mx/T)* bessK2(mx/T))
+        case default
+          write(*,*) "Error! x section", sigma, "not implemented"
+      end select
+    end subroutine sigmav
+
+    real(kind=rk) function kernel_agff( s, argsint )
+      implicit none
+        real(kind=rk), intent(in)           :: s
+        type (type_argsint), intent(in)     :: argsint
+        kernel_agff = sigma_agff(s,argsint%mf,argsint%ma)*4.0_rk*&
+                      F(s,argsint%ma,0.0_rk)*F(s,argsint%ma,0.0_rk)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+        return
+    end function kernel_agff
+    real(kind=rk) function kernel_afgf( s, argsint )
+      implicit none
+        real(kind=rk), intent(in)           :: s
+        type (type_argsint), intent(in)     :: argsint
+        kernel_afgf = sigma_afgf(s,argsint%mf,argsint%ma)*4.0_rk*&
+                      F(s,argsint%ma,argsint%mf)*F(s,argsint%ma,argsint%mf)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+        return
+    end function kernel_afgf
+    real(kind=rk) function kernel_aaxx( s, argsint )
+      implicit none
+        real(kind=rk), intent(in)           :: s
+        type (type_argsint), intent(in)     :: argsint
+        kernel_aaxx = sigma_aaxx(s,argsint%mx,argsint%ma)*4.0_rk*&
+                      F(s,argsint%ma,argsint%ma)*F(s,argsint%ma,argsint%ma)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+        return
+    end function kernel_aaxx
+
+    real(kind=rk) function kernel_xxaa( s, argsint )
+      implicit none
+        real(kind=rk), intent(in)           :: s
+        type (type_argsint), intent(in)     :: argsint
+
+        kernel_xxaa = sigma_xxaa(s,argsint%mx,argsint%ma)*4.0_rk*&
+                      F(s,argsint%mx,argsint%mx)*F(s,argsint%mx,argsint%mx)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+
+    end function kernel_xxaa
+
+    real(kind=rk) function F(s,m1,m2)
+      implicit none
+        real(kind=rk), intent(in)  :: s, m1, m2
+        F = 0.5_rk*sqrt((s-(m1+m2)*(m1+m2))*(s-(m1-m2)*(m1-m2)))
+        return
+    end function F
+
+
     include "rhs_boltzmann.f90"
+    include "rhs_region3a2.f90"
+    include "region3a_log.f90"
     include "RK4.f90"
 end module

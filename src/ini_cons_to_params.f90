@@ -10,11 +10,11 @@ subroutine ini_cons_to_params( params )
   write(stmx,'(F12.4)') params%mx
   write(stma,'(F12.4)') params%ma
 
-  call read_dbl_from_file(trim(params%ini_direc)//'initial_values_01_'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%init_rhoprime)
-  call read_dbl_from_file(trim(params%ini_direc)//'initial_values_Z01_'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%init_Y)
-  call read_matrix_from_file(trim(params%ini_direc)//'geff_heff.txt', geff_heff, 3,.true.)
-  call read_matrix_from_file(trim(params%ini_direc)//'heffHS'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%heff_HS, 2,.false.)
-  call read_matrix_from_file(trim(params%ini_direc)//'geffHS'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%geff_HS, 2,.false.)
+  !call read_vec(trim(params%ini_direc)//'initial_valuesz01_255.dat', params%initial_values, nrhs)
+  !call read_dbl_from_file(trim(params%ini_direc)//'initial_values_Z01_'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%init_Y)
+  call read_matrix_from_file(trim(params%ini_direc)//'geff_heff.txt', geff_heff, 3, .true.)
+  call read_matrix_from_file(trim(params%ini_direc)//'heffHS'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%heff_HS, 2, .false.)
+  call read_matrix_from_file(trim(params%ini_direc)//'geffHS'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%geff_HS, 2, .false.)
 
   n = size(geff_heff,2)
   allocate(params%heff(2,n))
@@ -28,5 +28,22 @@ subroutine ini_cons_to_params( params )
 
   params%heff_HS(1,:) = 10**params%heff_HS(1,:)
   params%geff_HS(1,:) = 10**params%geff_HS(1,:)
+
+ ! loop factor (sum_f mf^2 ncf qf^2 C0(0,0,ma^2,mf^2, mf^2,mf^2))^2
+!  select case (params%ma)
+!
+!    case (5.0_rk)
+!      params%C0sq = 5.83845_rk
+!    case (0.005_rk)
+!      params%C0sq = 7.80685_rk
+!    case (0.00005_rk)
+!      params%C0sq = 16.3943_rk
+!    case default
+!      write(*,*) "Loop coupling not known for ma=", params%ma
+!   end select
+
+   !call read_matrix_from_file(trim(params%ini_direc)//'correct/drhoarho59.dat', params%drhoa_rho, 2, .false.)
+   call read_matrix_from_file(trim(params%ini_direc)//'rhoprho59.txt', params%rhoa_rho, 2, .false.)
+   call read_matrix_from_file(trim(params%ini_direc)//'alphas.dat', params%alpha_s, 2, .false.)
 
 end subroutine ini_cons_to_params
