@@ -11,7 +11,8 @@ contains
 
     masq = ma*ma
     mxsq = mx*mx
-    sigma_xxaa = 0.5_rk*( mxsq*mxsq*((Sqrt(-4.0_rk*masq+s)*&
+    !0.5_rk*
+    sigma_xxaa = 0.25_rk*( mxsq*mxsq*((Sqrt(-4.0_rk*masq+s)*&
                 (-3.0_rk*masq*masq+8.0_rk*masq*mxsq-2.0_rk*mxsq*s))&
                 /(Sqrt(-4.0_rk*mxsq+s)* (masq*masq-4.0_rk*masq*mxsq+mxsq*s))+((6.0_rk*masq*masq-4.0_rk*masq*s+s*s)*&
                 (Log(-2.0_rk*masq+s-Sqrt((-4.0_rk*masq+s)*(-4.0_rk*mxsq+s)))-Log(-2.0_rk*masq+s+Sqrt((-4.0_rk*masq+s)*&

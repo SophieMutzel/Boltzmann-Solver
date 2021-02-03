@@ -71,8 +71,8 @@ program main
     write(*,*) "starting main time loop"
   end if
 
-  atol = 1e-10_rk ! absolute tolerance
-  rtol = 1e-10_rk ! relative tolerance
+  atol = 1e-6_rk ! absolute tolerance
+  rtol = 1e-6_rk ! relative tolerance
 
   !options = set_opts( DENSE_J = .true.,USER_SUPPLIED_JACOBIAN= .false.,&
                     !RELERR=rtol,ABSERR=atol )
@@ -82,8 +82,10 @@ program main
   OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=dz,HMAX=0.0001_rk,MXSTEP=100000)
   itask = 1
   istate = 1
+  write(*,*) "start"//exp2str(params%gaxx(1))//"ende"
   write(*,*) params%gaxx
   write(*,*) params%gaff
+
   allocate(Y(nrhs*params%N))
   Y = reshape(q, (/nrhs*params%N/) )
   write(*,*) Y, z
@@ -93,25 +95,30 @@ program main
     it = it + 1
     !zpdz=1.0_rk
     zpdz = z + params%dz_plot
-    CALL VODE_F90(region3a_log,nrhs*params%N,Y,z,zpdz,itask,istate,OPTIONS,params,argsint)
+    CALL VODE_F90(region3a_eq,nrhs*params%N,Y,z,zpdz,itask,istate,OPTIONS,params,argsint)
     q_new = reshape(Y,(/nrhs, params%N/))
     z = zpdz
+    write(*,*) z
+    !call rhs_contributions( nrhs*params%N, z, Y, params, argsint )
     !call RK4( q, z, dz, params, argsint, q_new )
     !q_tot(it,:,:) = q_new
-    q_tot(it,1,:) = z
-    q_tot(it,2:nrhs+1,:) = q_new
+
+    q_tot(1,:,it) = z
+    q_tot(2:nrhs+1,:,it) = q_new
     T = params%mx/10**z
-    q_tot(it,nrhs+2,:) = neq(T, params%mx, gDM)/ent(T, params)
+    q_tot(nrhs+2,:,it) = neq(T, params%mx, gDM)/ent(T, params)
     do i=1,params%N
-      q_tot(it,nrhs+3,i) = neq(sqrt(params%gaff(i))*Ta(T,params), params%mx, gDM)/ent(T, params)
+      q_tot(nrhs+3,i,it) = neq(sqrt(params%gaff(i))*Ta(T,params), params%mx, gDM)/ent(T, params)
+      q_tot(nrhs+4,i,it) = neq(sqrt(params%gaff(i))*Ta(T,params), params%ma, ga)/ent(T, params)
     end do
+    q_tot(nrhs+5,:,it) = params%mx/(sqrt(params%gaff)*Ta(T,params))
     !write(*,*) Y, z
 
   !  z = z + dz
     !write(*,*) "q=", q, z
   end do
   do i=1,params%N
-    call write_matrix("temp/"//float2str(params%gaff(i))//float2str(params%gaxx(i))//".txt",q_tot(:,:,i))
+    call write_matrix("temp/"//exp2str(params%gaff(i))//exp2str(params%gaxx(i))//".txt",q_tot(:,i,:))
   end do
 !Y_fin = q_tot(end,1,:);
 !do i=1,

@@ -166,6 +166,14 @@ module module_utils
       return
     end function float2str
 
+    character(len=10) function exp2str(float)
+      implicit none
+      real(kind=rk), intent(in)  :: float
+
+      write(exp2str,'(E7.0)') float
+      return
+    end function exp2str
+
     include "quadpack.f90"
     include "interpolation.f90"
 end module

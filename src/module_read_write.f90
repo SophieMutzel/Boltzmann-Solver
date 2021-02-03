@@ -117,11 +117,13 @@ module module_read_write
       implicit none
       character(len=*), intent(in)                           :: filename
       real(kind=rk), intent(in), dimension(:,:)              :: data
-      integer(kind=ik)                                       :: io_error
+      integer(kind=ik)                                       :: io_error,i
 
       open (unit=99, file=trim(adjustl(filename)), status='replace', action='write', iostat=io_error)
       if ( io_error == 0) then
-        write(99,*) data
+        do i =1,size(data,2)
+          write(99,*) data(:,i)
+        end do
       else
         write(*,*) 'error', io_error,' while opening the file', filename
       end if

@@ -26,7 +26,7 @@ module module_params
     real(kind=rk)                                :: Mpl = 1.22e19, g = 10.75
 
     ! start, end of simulation
-    real(kind=rk)                                :: z_max = 2.0_rk, z_start = -2.0, dz = 0.000000001_rk, dz_plot=0.2_rk!z_max = 100.0, z_start = 0.01, dz = 0.01
+    real(kind=rk)                                :: z_max = 0.1_rk, z_start = -2.0, dz = 0.000000001_rk, dz_plot=0.2_rk!z_max = 100.0, z_start = 0.01, dz = 0.01
     integer(kind=ik)                             :: nt = 100
 
     ! correct relic density?

@@ -124,7 +124,7 @@ module module_rhs
         do i=1, 9
           argsint%mf = mf(i)
           argsint%nc = ncf(i)
-          call qagi(kernel2_xxff,argsint,max(4.0_rk*mx*mx,4.0_rk*mf(i)*mf(i)),&
+          call qagi(kernel_xxff,argsint,max(4.0_rk*mx*mx,4.0_rk*mf(i)*mf(i)),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
           gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
@@ -180,6 +180,15 @@ module module_rhs
                       F(s,argsint%ma,0.0_rk)*F(s,argsint%ma,0.0_rk)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel_agff
+    real(kind=rk) function kernel_xxff( s, argsint )
+      implicit none
+        real(kind=rk), intent(in)           :: s
+        type (type_argsint), intent(in)     :: argsint
+
+        kernel_xxff = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma)*4.0_rk*&
+                      F(s,argsint%mx,argsint%mx)*F(s,argsint%mx,argsint%mx)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+        return
+    end function kernel_xxff
     real(kind=rk) function kernel_afgf( s, argsint )
       implicit none
         real(kind=rk), intent(in)           :: s
@@ -218,5 +227,7 @@ module module_rhs
     include "rhs_boltzmann.f90"
     include "rhs_region3a2.f90"
     include "region3a_log.f90"
+    include "rhs_contributions.f90"
+    include "region3aeq.f90"
     include "RK4.f90"
 end module
