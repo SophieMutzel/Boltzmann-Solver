@@ -1158,1203 +1158,1070 @@ subroutine qagi ( f, argsint, bound, inf, epsabs, epsrel, result, abserr, neval,
 
   return
 end
-!subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
-!  neval, ier )
-
-!!*****************************************************************************80
-!!
-!!! QAGP computes a definite integral.
-!!
-!!  Discussion:
-!!
-!!    The routine calculates an approximation RESULT to a definite integral
-!!      I = integral of F over (A,B),
-!!    hopefully satisfying
-!!      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
-!!
-!!    Interior break points of the integration interval,
-!!    where local difficulties of the integrand may occur, such as
-!!    singularities or discontinuities, are provided by the user.
-!!
-!!  Author:
-!!
-!!    Robert Piessens, Elise de Doncker-Kapenger,
-!!    Christian Ueberhuber, David Kahaner
-!!
-!!  Reference:
-!!
-!!    Robert Piessens, Elise de Doncker-Kapenger,
-!!    Christian Ueberhuber, David Kahaner,
-!!    QUADPACK, a Subroutine Package for Automatic Integration,
-!!    Springer Verlag, 1983
-!!
-!!  Parameters:
-!!
-!!    Input, external real ( kind = rk ) F, the name of the function routine,
-!!    of the form
-!!      function f ( x )
-!!      real ( kind = rk ) f
-!!      real ( kind = rk ) x
-!!    which evaluates the integrand function.
-!!
-!!    Input, real ( kind = rk ) A, B, the limits of integration.
-!!
-!!    Input, integer ( kind = 4 ) NPTS2, the number of user-supplied break points within
-!!    the integration range, plus 2.  NPTS2 must be at least 2.
-!!
-!!    Input/output, real ( kind = rk ) POINTS(NPTS2), contains the user provided interior
-!!    breakpoints in entries 1 through NPTS2-2.  If these points are not
-!!    in ascending order on input, they will be sorted.
-!!
-!!    Input, real ( kind = rk ) EPSABS, EPSREL, the absolute and relative accuracy requested.
-!!
-!!    Output, real ( kind = rk ) RESULT, the estimated value of the integral.
-!!
-!!    Output, real ( kind = rk ) ABSERR, an estimate of || I - RESULT ||.
-!!
-!!    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
-!!
-!!    Output, integer ( kind = 4 ) IER, return flag.
-!!                     ier = 0 normal and reliable termination of the
-!!                             routine. it is assumed that the requested
-!!                             accuracy has been achieved.
-!!                     ier > 0 abnormal termination of the routine.
-!!                             the estimates for integral and error are
-!!                             less reliable. it is assumed that the
-!!                             requested accuracy has not been achieved.
-!!                     ier = 1 maximum number of subdivisions allowed
-!!                             has been achieved. one can allow more
-!!                             subdivisions by increasing the data value
-!!                             of limit in qagp(and taking the according
-!!                             dimension adjustments into account).
-!!                             however, if this yields no improvement
-!!                             it is advised to analyze the integrand
-!!                             in order to determine the integration
-!!                             difficulties. if the position of a local
-!!                             difficulty can be determined (i.e.
-!!                             singularity, discontinuity within the
-!!                             interval), it should be supplied to the
-!!                             routine as an element of the vector
-!!                             points. if necessary, an appropriate
-!!                             special-purpose integrator must be used,
-!!                             which is designed for handling the type
-!!                             of difficulty involved.
-!!                         = 2 the occurrence of roundoff error is
-!!                             detected, which prevents the requested
-!!                             tolerance from being achieved.
-!!                             the error may be under-estimated.
-!!                         = 3 extremely bad integrand behavior occurs
-!!                             at some points of the integration
-!!                             interval.
-!!                         = 4 the algorithm does not converge. roundoff
-!!                             error is detected in the extrapolation
-!!                             table. it is presumed that the requested
-!!                             tolerance cannot be achieved, and that
-!!                             the returned result is the best which
-!!                             can be obtained.
-!!                         = 5 the integral is probably divergent, or
-!!                             slowly convergent. it must be noted that
-!!                             divergence can occur with any other value
-!!                             of ier > 0.
-!!                         = 6 the input is invalid because
-!!                             npts2 < 2 or
-!!                             break points are specified outside
-!!                             the integration range or
-!!                             epsabs < 0 and epsrel < 0,
-!!                             or limit < npts2.
-!!                             result, abserr, neval are set to zero.
-!!
-!!  Local parameters:
-!!
-!!            the dimension of rlist2 is determined by the value of
-!!            limexp in QEXTR (rlist2 should be of dimension
-!!            (limexp+2) at least).
-!!
-!!           alist     - list of left end points of all subintervals
-!!                       considered up to now
-!!           blist     - list of right end points of all subintervals
-!!                       considered up to now
-!!           rlist(i)  - approximation to the integral over
-!!                       (alist(i),blist(i))
-!!           rlist2    - array of dimension at least limexp+2
-!!                       containing the part of the epsilon table which
-!!                       is still needed for further computations
-!!           elist(i)  - error estimate applying to rlist(i)
-!!           maxerr    - pointer to the interval with largest error
-!!                       estimate
-!!           errmax    - elist(maxerr)
-!!           erlast    - error on the interval currently subdivided
-!!                       (before that subdivision has taken place)
-!!           area      - sum of the integrals over the subintervals
-!!           errsum    - sum of the errors over the subintervals
-!!           errbnd    - requested accuracy max(epsabs,epsrel*
-!!                       abs(result))
-!!           *****1    - variable for the left subinterval
-!!           *****2    - variable for the right subinterval
-!!           last      - index for subdivision
-!!           nres      - number of calls to the extrapolation routine
-!!           numrl2    - number of elements in rlist2. if an appropriate
-!!                       approximation to the compounded integral has
-!!                       obtained, it is put in rlist2(numrl2) after
-!!                       numrl2 has been increased by one.
-!!           erlarg    - sum of the errors over the intervals larger
-!!                       than the smallest interval considered up to now
-!!           extrap    - logical variable denoting that the routine
-!!                       is attempting to perform extrapolation. i.e.
-!!                       before subdividing the smallest interval we
-!!                       try to decrease the value of erlarg.
-!!           noext     - logical variable denoting that extrapolation is
-!!                       no longer allowed (true-value)
-!!
-!  implicit none
-
-!  integer ( kind = 4 ), parameter :: limit = 500
-
-!  real ( kind = rk ) a
-!  real ( kind = rk ) abseps
-!  real ( kind = rk ) abserr
-!  real ( kind = rk ) alist(limit)
-!  real ( kind = rk ) area
-!  real ( kind = rk ) area1
-!  real ( kind = rk ) area12
-!  real ( kind = rk ) area2
-!  real ( kind = rk ) a1
-!  real ( kind = rk ) a2
-!  real ( kind = rk ) b
-!  real ( kind = rk ) blist(limit)
-!  real ( kind = rk ) b1
-!  real ( kind = rk ) b2
-!  real ( kind = rk ) correc
-!  real ( kind = rk ) defabs
-!  real ( kind = rk ) defab1
-!  real ( kind = rk ) defab2
-!  real ( kind = rk ) dres
-!  real ( kind = rk ) elist(limit)
-!  real ( kind = rk ) epsabs
-!  real ( kind = rk ) epsrel
-!  real ( kind = rk ) erlarg
-!  real ( kind = rk ) erlast
-!  real ( kind = rk ) errbnd
-!  real ( kind = rk ) errmax
-!  real ( kind = rk ) error1
-!  real ( kind = rk ) erro12
-!  real ( kind = rk ) error2
-!  real ( kind = rk ) errsum
-!  real ( kind = rk ) ertest
-!  logical extrap
-!  real ( kind = rk ), external :: f
-!  integer ( kind = 4 ) i
-!  integer ( kind = 4 ) id
-!  integer ( kind = 4 ) ier
-!  integer ( kind = 4 ) ierro
-!  integer ( kind = 4 ) ind1
-!  integer ( kind = 4 ) ind2
-!  integer ( kind = 4 ) iord(limit)
-!  integer ( kind = 4 ) iroff1
-!  integer ( kind = 4 ) iroff2
-!  integer ( kind = 4 ) iroff3
-!  integer ( kind = 4 ) j
-!  integer ( kind = 4 ) jlow
-!  integer ( kind = 4 ) jupbnd
-!  integer ( kind = 4 ) k
-!  integer ( kind = 4 ) ksgn
-!  integer ( kind = 4 ) ktmin
-!  integer ( kind = 4 ) last
-!  integer ( kind = 4 ) levcur
-!  integer ( kind = 4 ) level(limit)
-!  integer ( kind = 4 ) levmax
-!  integer ( kind = 4 ) maxerr
-!  integer ( kind = 4 ) ndin(40)
-!  integer ( kind = 4 ) neval
-!  integer ( kind = 4 ) nint
-!  logical noext
-!  integer ( kind = 4 ) npts
-!  integer ( kind = 4 ) npts2
-!  integer ( kind = 4 ) nres
-!  integer ( kind = 4 ) nrmax
-!  integer ( kind = 4 ) numrl2
-!  real ( kind = rk ) points(40)
-!  real ( kind = rk ) pts(40)
-!  real ( kind = rk ) resa
-!  real ( kind = rk ) resabs
-!  real ( kind = rk ) reseps
-!  real ( kind = rk ) result
-!  real ( kind = rk ) res3la(3)
-!  real ( kind = rk ) rlist(limit)
-!  real ( kind = rk ) rlist2(52)
-!  real ( kind = rk ) sign
-!  real ( kind = rk ) temp
-!!
-!!  Test on validity of parameters.
-!!
-!  ier = 0
-!  neval = 0
-!  last = 0
-!  result = 0.0E+00
-!  abserr = 0.0E+00
-!  alist(1) = a
-!  blist(1) = b
-!  rlist(1) = 0.0E+00
-!  elist(1) = 0.0E+00
-!  iord(1) = 0
-!  level(1) = 0
-!  npts = npts2 - 2
-
-!  if ( npts2 < 2 ) then
-!    ier = 6
-!    return
-!  else if ( limit <= npts .or. ( epsabs < 0.0E+00 .and. &
-!    epsrel < 0.0E+00) ) then
-!    ier = 6
-!    return
-!  end if
-!!
-!!  If any break points are provided, sort them into an
-!!  ascending sequence.
-!!
-!  if ( b < a ) then
-!    sign = -1.0E+00
-!  else
-!    sign = +1.0E+00
-!  end if
-
-!  pts(1) = min ( a, b )
-
-!  do i = 1, npts
-!    pts(i+1) = points(i)
-!  end do
-
-!  pts(npts+2) = max ( a, b )
-!  nint = npts+1
-!  a1 = pts(1)
-
-!  if ( npts /= 0 ) then
-
-!    do i = 1, nint
-!      do j = i+1, nint+1
-!        if ( pts(j) < pts(i) ) then
-!          temp   = pts(i)
-!          pts(i) = pts(j)
-!          pts(j) = temp
-!        end if
-!      end do
-!    end do
-
-!    if ( pts(1) /= min ( a, b ) .or. pts(nint+1) /= max ( a, b ) ) then
-!      ier = 6
-!      return
-!    end if
-
-!  end if
-!!
-!!  Compute first integral and error approximations.
-!!
-!  resabs = 0.0E+00
-
-!  do i = 1, nint
-
-!    b1 = pts(i+1)
-!    call qk21 ( f, a1, b1, area1, error1, defabs, resa )
-!    abserr = abserr + error1
-!    result = result + area1
-!    ndin(i) = 0
-
-!    if ( error1 == resa .and. error1 /= 0.0E+00 ) then
-!      ndin(i) = 1
-!    end if
-
-!    resabs = resabs + defabs
-!    level(i) = 0
-!    elist(i) = error1
-!    alist(i) = a1
-!    blist(i) = b1
-!    rlist(i) = area1
-!    iord(i) = i
-!    a1 = b1
-
-!  end do
-
-!  errsum = 0.0E+00
-
-!  do i = 1, nint
-!    if ( ndin(i) == 1 ) then
-!      elist(i) = abserr
-!    end if
-!    errsum = errsum + elist(i)
-!  end do
-!!
-!!  Test on accuracy.
-!!
-!  last = nint
-!  neval = 21 * nint
-!  dres = abs ( result )
-!  errbnd = max ( epsabs, epsrel * dres )
-
-!  if ( abserr <= 1.0E+02 * epsilon ( resabs ) * resabs .and. &
-!    abserr > errbnd ) then
-!    ier = 2
-!  end if
-
-!  if ( nint /= 1 ) then
-
-!    do i = 1, npts
-
-!      jlow = i+1
-!      ind1 = iord(i)
-
-!      do j = jlow, nint
-!        ind2 = iord(j)
-!        if ( elist(ind1) <= elist(ind2) ) then
-!          ind1 = ind2
-!          k = j
-!        end if
-!      end do
-
-!      if ( ind1 /= iord(i) ) then
-!        iord(k) = iord(i)
-!        iord(i) = ind1
-!      end if
-
-!    end do
-
-!    if ( limit < npts2 ) then
-!      ier = 1
-!    end if
-
-!  end if
-
-!  if ( ier /= 0 .or. abserr <= errbnd ) then
-!    return
-!  end if
-!!
-!!  Initialization
-!!
-!  rlist2(1) = result
-!  maxerr = iord(1)
-!  errmax = elist(maxerr)
-!  area = result
-!  nrmax = 1
-!  nres = 0
-!  numrl2 = 1
-!  ktmin = 0
-!  extrap = .false.
-!  noext = .false.
-!  erlarg = errsum
-!  ertest = errbnd
-!  levmax = 1
-!  iroff1 = 0
-!  iroff2 = 0
-!  iroff3 = 0
-!  ierro = 0
-!  abserr = huge ( abserr )
-
-!  if ( dres >= ( 1.0E+00 - 0.5E+00 * epsilon ( resabs ) ) * resabs ) then
-!    ksgn = 1
-!  else
-!    ksgn = -1
-!  end if
-
-!  do last = npts2, limit
-!!
-!!  Bisect the subinterval with the NRMAX-th largest error estimate.
-!!
-!    levcur = level(maxerr) + 1
-!    a1 = alist(maxerr)
-!    b1 = 0.5E+00 * ( alist(maxerr) + blist(maxerr) )
-!    a2 = b1
-!    b2 = blist(maxerr)
-!    erlast = errmax
-!    call qk21 ( f, a1, b1, area1, error1, resa, defab1 )
-!    call qk21 ( f, a2, b2, area2, error2, resa, defab2 )
-!!
-!!  Improve previous approximations to integral and error
-!!  and test for accuracy.
-!!
-!    neval = neval + 42
-!    area12 = area1 + area2
-!    erro12 = error1 + error2
-!    errsum = errsum + erro12 -errmax
-!    area = area + area12 - rlist(maxerr)
-
-!    if ( defab1 /= error1 .and. defab2 /= error2 ) then
-
-!      if ( abs ( rlist ( maxerr ) - area12 ) <= 1.0E-05 * abs(area12) .and. &
-!        erro12 >= 9.9E-01 * errmax ) then
-
-!        if ( extrap ) then
-!          iroff2 = iroff2+1
-!        else
-!          iroff1 = iroff1+1
-!        end if
-
-!      end if
-
-!      if ( last > 10 .and. erro12 > errmax ) then
-!        iroff3 = iroff3 + 1
-!      end if
-
-!    end if
-
-!    level(maxerr) = levcur
-!    level(last) = levcur
-!    rlist(maxerr) = area1
-!    rlist(last) = area2
-!    errbnd = max ( epsabs, epsrel * abs ( area ) )
-!!
-!!  Test for roundoff error and eventually set error flag.
-!!
-!    if ( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
-!      ier = 2
-!    end if
-
-!    if ( 5 <= iroff2 ) then
-!      ierro = 3
-!    end if
-!!
-!!  Set error flag in the case that the number of subintervals
-!!  equals limit.
-!!
-!    if ( last == limit ) then
-!      ier = 1
-!    end if
-!!
-!!  Set error flag in the case of bad integrand behavior
-!!  at a point of the integration range
-!!
-!    if ( max ( abs(a1), abs(b2)) <= ( 1.0E+00 + 1.0E+03 * epsilon ( a1 ) )* &
-!    ( abs ( a2 ) + 1.0E+03 * tiny ( a2 ) ) ) then
-!      ier = 4
-!    end if
-!!
-!!  Append the newly-created intervals to the list.
-!!
-!    if ( error2 <= error1 ) then
-!      alist(last) = a2
-!      blist(maxerr) = b1
-!      blist(last) = b2
-!      elist(maxerr) = error1
-!      elist(last) = error2
-!    else
-!      alist(maxerr) = a2
-!      alist(last) = a1
-!      blist(last) = b1
-!      rlist(maxerr) = area2
-!      rlist(last) = area1
-!      elist(maxerr) = error2
-!      elist(last) = error1
-!    end if
-!!
-!!  Call QSORT to maintain the descending ordering
-!!  in the list of error estimates and select the subinterval
-!!  with nrmax-th largest error estimate (to be bisected next).
-!!
-!    call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
-
-!    if ( errsum <= errbnd ) then
-!      go to 190
-!    end if
-
-!    if ( ier /= 0 ) then
-!      exit
-!    end if
-
-!    if ( noext ) then
-!      cycle
-!    end if
-
-!    erlarg = erlarg - erlast
-
-!    if ( levcur+1 <= levmax ) then
-!      erlarg = erlarg + erro12
-!    end if
-!!
-!!  Test whether the interval to be bisected next is the
-!!  smallest interval.
-!!
-!    if ( .not. extrap ) then
-
-!      if ( level(maxerr)+1 <= levmax ) then
-!        cycle
-!      end if
-
-!      extrap = .true.
-!      nrmax = 2
-
-!    end if
-!!
-!!  The smallest interval has the largest error.
-!!  Before bisecting decrease the sum of the errors over the
-!!  larger intervals (erlarg) and perform extrapolation.
-!!
-!    if ( ierro /= 3 .and. erlarg > ertest ) then
-
-!      id = nrmax
-!      jupbnd = last
-!      if ( last > (2+limit/2) ) then
-!        jupbnd = limit+3-last
-!      end if
-
-!      do k = id, jupbnd
-!        maxerr = iord(nrmax)
-!        errmax = elist(maxerr)
-!        if ( level(maxerr)+1 <= levmax ) then
-!          go to 160
-!        end if
-!        nrmax = nrmax + 1
-!      end do
-
-!    end if
-!!
-!!  Perform extrapolation.
-!!
-!    numrl2 = numrl2 + 1
-!    rlist2(numrl2) = area
-
-!    if ( numrl2 <= 2 ) then
-!      go to 155
-!    end if
-
-!    call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
-!    ktmin = ktmin+1
-
-!    if ( 5 < ktmin .and. abserr < 1.0E-03 * errsum ) then
-!      ier = 5
-!    end if
-
-!    if ( abseps < abserr ) then
-
-!      ktmin = 0
-!      abserr = abseps
-!      result = reseps
-!      correc = erlarg
-!      ertest = max ( epsabs, epsrel * abs(reseps) )
-
-!      if ( abserr < ertest ) then
-!        exit
-!      end if
-
-!    end if
-!!
-!!  Prepare bisection of the smallest interval.
-!!
-!    if ( numrl2 == 1 ) then
-!      noext = .true.
-!    end if
-
-!    if ( 5 <= ier ) then
-!      exit
-!    end if
-
-!155 continue
-
-!    maxerr = iord(1)
-!    errmax = elist(maxerr)
-!    nrmax = 1
-!    extrap = .false.
-!    levmax = levmax + 1
-!    erlarg = errsum
-
-!160 continue
-
-!  end do
-!!
-!!  Set the final result.
-!!
-!  if ( abserr == huge ( abserr ) ) then
-!    go to 190
-!  end if
-
-!  if ( ( ier + ierro ) == 0 ) then
-!    go to 180
-!  end if
-
-!  if ( ierro == 3 ) then
-!    abserr = abserr + correc
-!  end if
-
-!  if ( ier == 0 ) then
-!    ier = 3
-!  end if
-
-!  if ( result /= 0.0E+00 .and. area /= 0.0E+00 ) then
-!    go to 175
-!  end if
-
-!  if ( errsum < abserr ) then
-!    go to 190
-!  end if
-
-!  if ( area == 0.0E+00 ) then
-!    go to 210
-!  end if
-
-!  go to 180
-
-!175 continue
-
-!  if ( abserr / abs(result) > errsum / abs(area) ) then
-!    go to 190
-!  end if
-!!
-!!  Test on divergence.
-!!
-!  180 continue
-
-!  if ( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
-!    resabs*1.0E-02 ) go to 210
-
-!  if ( 1.0E-02 > (result/area) .or. (result/area) > 1.0E+02 .or. &
-!    errsum > abs(area) ) then
-!    ier = 6
-!  end if
-
-!  go to 210
-!!
-!!  Compute global integral sum.
-!!
-!190 continue
-
-!  result = sum ( rlist(1:last) )
-
-!  abserr = errsum
-
-!210 continue
-
-!  if ( 2 < ier ) then
-!    ier = ier - 1
-!  end if
-
-!  result = result * sign
-
-!  return
-!end
-!subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
-
-!!*****************************************************************************80
-!!
-!!! QAGS estimates the integral of a function.
-!!
-!!  Discussion:
-!!
-!!    The routine calculates an approximation RESULT to a definite integral
-!!      I = integral of F over (A,B),
-!!    hopefully satisfying
-!!      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
-!!
-!!  Author:
-!!
-!!    Robert Piessens, Elise de Doncker-Kapenger,
-!!    Christian Ueberhuber, David Kahaner
-!!
-!!  Reference:
-!!
-!!    Robert Piessens, Elise de Doncker-Kapenger,
-!!    Christian Ueberhuber, David Kahaner,
-!!    QUADPACK, a Subroutine Package for Automatic Integration,
-!!    Springer Verlag, 1983
-!!
-!!  Parameters:
-!!
-!!    Input, external real ( kind = rk ) F, the name of the function routine, of the form
-!!      function f ( x )
-!!      real ( kind = rk ) f
-!!      real ( kind = rk ) x
-!!    which evaluates the integrand function.
-!!
-!!    Input, real ( kind = rk ) A, B, the limits of integration.
-!!
-!!    Input, real ( kind = rk ) EPSABS, EPSREL, the absolute and relative accuracy requested.
-!!
-!!    Output, real ( kind = rk ) RESULT, the estimated value of the integral.
-!!
-!!    Output, real ( kind = rk ) ABSERR, an estimate of || I - RESULT ||.
-!!
-!!    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
-!!
-!!    Output, integer ( kind = 4 ) IER, error flag.
-!!                     ier = 0 normal and reliable termination of the
-!!                             routine. it is assumed that the requested
-!!                             accuracy has been achieved.
-!!                     ier > 0 abnormal termination of the routine
-!!                             the estimates for integral and error are
-!!                             less reliable. it is assumed that the
-!!                             requested accuracy has not been achieved.
-!!                         = 1 maximum number of subdivisions allowed
-!!                             has been achieved. one can allow more sub-
-!!                             divisions by increasing the data value of
-!!                             limit in qags (and taking the according
-!!                             dimension adjustments into account).
-!!                             however, if this yields no improvement
-!!                             it is advised to analyze the integrand
-!!                             in order to determine the integration
-!!                             difficulties. if the position of a
-!!                             local difficulty can be determined (e.g.
-!!                             singularity, discontinuity within the
-!!                             interval) one will probably gain from
-!!                             splitting up the interval at this point
-!!                             and calling the integrator on the sub-
-!!                             ranges. if possible, an appropriate
-!!                             special-purpose integrator should be used,
-!!                             which is designed for handling the type
-!!                             of difficulty involved.
-!!                         = 2 the occurrence of roundoff error is detec-
-!!                             ted, which prevents the requested
-!!                             tolerance from being achieved.
-!!                             the error may be under-estimated.
-!!                         = 3 extremely bad integrand behavior occurs
-!!                             at some  points of the integration
-!!                             interval.
-!!                         = 4 the algorithm does not converge. roundoff
-!!                             error is detected in the extrapolation
-!!                             table. it is presumed that the requested
-!!                             tolerance cannot be achieved, and that the
-!!                             returned result is the best which can be
-!!                             obtained.
-!!                         = 5 the integral is probably divergent, or
-!!                             slowly convergent. it must be noted that
-!!                             divergence can occur with any other value
-!!                             of ier.
-!!                         = 6 the input is invalid, because
-!!                             epsabs < 0 and epsrel < 0,
-!!                             result, abserr and neval are set to zero.
-!!
-!!  Local Parameters:
-!!
-!!           alist     - list of left end points of all subintervals
-!!                       considered up to now
-!!           blist     - list of right end points of all subintervals
-!!                       considered up to now
-!!           rlist(i)  - approximation to the integral over
-!!                       (alist(i),blist(i))
-!!           rlist2    - array of dimension at least limexp+2 containing
-!!                       the part of the epsilon table which is still
-!!                       needed for further computations
-!!           elist(i)  - error estimate applying to rlist(i)
-!!           maxerr    - pointer to the interval with largest error
-!!                       estimate
-!!           errmax    - elist(maxerr)
-!!           erlast    - error on the interval currently subdivided
-!!                       (before that subdivision has taken place)
-!!           area      - sum of the integrals over the subintervals
-!!           errsum    - sum of the errors over the subintervals
-!!           errbnd    - requested accuracy max(epsabs,epsrel*
-!!                       abs(result))
-!!           *****1    - variable for the left interval
-!!           *****2    - variable for the right interval
-!!           last      - index for subdivision
-!!           nres      - number of calls to the extrapolation routine
-!!           numrl2    - number of elements currently in rlist2. if an
-!!                       appropriate approximation to the compounded
-!!                       integral has been obtained it is put in
-!!                       rlist2(numrl2) after numrl2 has been increased
-!!                       by one.
-!!           small     - length of the smallest interval considered
-!!                       up to now, multiplied by 1.5
-!!           erlarg    - sum of the errors over the intervals larger
-!!                       than the smallest interval considered up to now
-!!           extrap    - logical variable denoting that the routine is
-!!                       attempting to perform extrapolation i.e. before
-!!                       subdividing the smallest interval we try to
-!!                       decrease the value of erlarg.
-!!           noext     - logical variable denoting that extrapolation
-!!                       is no longer allowed (true value)
-!!
-!  implicit none
-
-!  integer ( kind = 4 ), parameter :: limit = 500
-
-!  real ( kind = rk ) a
-!  real ( kind = rk ) abseps
-!  real ( kind = rk ) abserr
-!  real ( kind = rk ) alist(limit)
-!  real ( kind = rk ) area
-!  real ( kind = rk ) area1
-!  real ( kind = rk ) area12
-!  real ( kind = rk ) area2
-!  real ( kind = rk ) a1
-!  real ( kind = rk ) a2
-!  real ( kind = rk ) b
-!  real ( kind = rk ) blist(limit)
-!  real ( kind = rk ) b1
-!  real ( kind = rk ) b2
-!  real ( kind = rk ) correc
-!  real ( kind = rk ) defabs
-!  real ( kind = rk ) defab1
-!  real ( kind = rk ) defab2
-!  real ( kind = rk ) dres
-!  real ( kind = rk ) elist(limit)
-!  real ( kind = rk ) epsabs
-!  real ( kind = rk ) epsrel
-!  real ( kind = rk ) erlarg
-!  real ( kind = rk ) erlast
-!  real ( kind = rk ) errbnd
-!  real ( kind = rk ) errmax
-!  real ( kind = rk ) error1
-!  real ( kind = rk ) error2
-!  real ( kind = rk ) erro12
-!  real ( kind = rk ) errsum
-!  real ( kind = rk ) ertest
-!  logical extrap
-!  real ( kind = rk ), external :: f
-!  integer ( kind = 4 ) id
-!  integer ( kind = 4 ) ier
-!  integer ( kind = 4 ) ierro
-!  integer ( kind = 4 ) iord(limit)
-!  integer ( kind = 4 ) iroff1
-!  integer ( kind = 4 ) iroff2
-!  integer ( kind = 4 ) iroff3
-!  integer ( kind = 4 ) jupbnd
-!  integer ( kind = 4 ) k
-!  integer ( kind = 4 ) ksgn
-!  integer ( kind = 4 ) ktmin
-!  integer ( kind = 4 ) last
-!  logical noext
-!  integer ( kind = 4 ) maxerr
-!  integer ( kind = 4 ) neval
-!  integer ( kind = 4 ) nres
-!  integer ( kind = 4 ) nrmax
-!  integer ( kind = 4 ) numrl2
-!  real ( kind = rk ) resabs
-!  real ( kind = rk ) reseps
-!  real ( kind = rk ) result
-!  real ( kind = rk ) res3la(3)
-!  real ( kind = rk ) rlist(limit)
-!  real ( kind = rk ) rlist2(52)
-!  real ( kind = rk ) small
-!!
-!!  The dimension of rlist2 is determined by the value of
-!!  limexp in QEXTR (rlist2 should be of dimension
-!!  (limexp+2) at least).
-!!
-!!  Test on validity of parameters.
-!!
-!  ier = 0
-!  neval = 0
-!  last = 0
-!  result = 0.0E+00
-!  abserr = 0.0E+00
-!  alist(1) = a
-!  blist(1) = b
-!  rlist(1) = 0.0E+00
-!  elist(1) = 0.0E+00
-
-!  if ( epsabs < 0.0E+00 .and. epsrel < 0.0E+00 ) then
-!    ier = 6
-!    return
-!  end if
-!!
-!!  First approximation to the integral.
-!!
-!  ierro = 0
-!  call qk21 ( f, a, b, result, abserr, defabs, resabs )
-!!
-!!  Test on accuracy.
-!!
-!  dres = abs ( result )
-!  errbnd = max ( epsabs, epsrel * dres )
-!  last = 1
-!  rlist(1) = result
-!  elist(1) = abserr
-!  iord(1) = 1
-
-!  if ( abserr <= 1.0E+02 * epsilon ( defabs ) * defabs .and. &
-!    abserr > errbnd ) then
-!    ier = 2
-!  end if
-
-!  if ( limit == 1 ) then
-!    ier = 1
-!  end if
-
-!  if ( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
-!    abserr == 0.0E+00 ) go to 140
-!!
-!!  Initialization.
-!!
-!  rlist2(1) = result
-!  errmax = abserr
-!  maxerr = 1
-!  area = result
-!  errsum = abserr
-!  abserr = huge ( abserr )
-!  nrmax = 1
-!  nres = 0
-!  numrl2 = 2
-!  ktmin = 0
-!  extrap = .false.
-!  noext = .false.
-!  iroff1 = 0
-!  iroff2 = 0
-!  iroff3 = 0
-
-!  if ( dres >= (1.0E+00 - 5.0E+01* epsilon ( defabs ) ) * defabs ) then
-!    ksgn = 1
-!  else
-!    ksgn = -1
-!  end if
-
-!  do last = 2, limit
-!!
-!!  Bisect the subinterval with the nrmax-th largest error estimate.
-!!
-!    a1 = alist(maxerr)
-!    b1 = 5.0E-01 * ( alist(maxerr) + blist(maxerr) )
-!    a2 = b1
-!    b2 = blist(maxerr)
-!    erlast = errmax
-!    call qk21 ( f, a1, b1, area1, error1, resabs, defab1 )
-!    call qk21 ( f, a2, b2, area2, error2, resabs, defab2 )
-!!
-!!  Improve previous approximations to integral and error
-!!  and test for accuracy.
-!!
-!    area12 = area1+area2
-!    erro12 = error1+error2
-!    errsum = errsum+erro12-errmax
-!    area = area+area12-rlist(maxerr)
-
-!    if ( defab1 == error1 .or. defab2 == error2 ) go to 15
-
-!    if ( abs ( rlist(maxerr) - area12) > 1.0E-05 * abs(area12) &
-!      .or. erro12 < 9.9E-01 * errmax ) go to 10
-
-!    if ( extrap ) then
-!      iroff2 = iroff2+1
-!    else
-!      iroff1 = iroff1+1
-!    end if
-
-!10  continue
-
-!    if ( last > 10 .and. erro12 > errmax ) then
-!      iroff3 = iroff3+1
-!    end if
-
-!15  continue
-
-!    rlist(maxerr) = area1
-!    rlist(last) = area2
-!    errbnd = max ( epsabs, epsrel*abs(area) )
-!!
-!!  Test for roundoff error and eventually set error flag.
-!!
-!    if ( iroff1+iroff2 >= 10 .or. iroff3 >= 20 ) then
-!      ier = 2
-!    end if
-
-!    if ( iroff2 >= 5 ) then
-!      ierro = 3
-!    end if
-!!
-!!  Set error flag in the case that the number of subintervals
-!!  equals limit.
-!!
-!    if ( last == limit ) then
-!      ier = 1
-!    end if
-!!
-!!  Set error flag in the case of bad integrand behavior
-!!  at a point of the integration range.
-!!
-!    if ( max ( abs(a1),abs(b2)) <= (1.0E+00+1.0E+03* epsilon ( a1 ) )* &
-!      (abs(a2)+1.0E+03* tiny ( a2 ) ) ) then
-!      ier = 4
-!    end if
-!!
-!!  Append the newly-created intervals to the list.
-!!
-!    if ( error2 <= error1 ) then
-!      alist(last) = a2
-!      blist(maxerr) = b1
-!      blist(last) = b2
-!      elist(maxerr) = error1
-!      elist(last) = error2
-!    else
-!      alist(maxerr) = a2
-!      alist(last) = a1
-!      blist(last) = b1
-!      rlist(maxerr) = area2
-!      rlist(last) = area1
-!      elist(maxerr) = error2
-!      elist(last) = error1
-!    end if
-!!
-!!  Call QSORT to maintain the descending ordering
-!!  in the list of error estimates and select the subinterval
-!!  with nrmax-th largest error estimate (to be bisected next).
-!!
-!    call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
-
-!    if ( errsum <= errbnd ) go to 115
-
-!    if ( ier /= 0 ) then
-!      exit
-!    end if
-
-!    if ( last == 2 ) go to 80
-!    if ( noext ) go to 90
-
-!    erlarg = erlarg-erlast
-
-!    if ( abs(b1-a1) > small ) then
-!      erlarg = erlarg+erro12
-!    end if
-!!
-!!  Test whether the interval to be bisected next is the
-!!  smallest interval.
-!!
-!    if ( .not. extrap ) then
-!      if ( abs(blist(maxerr)-alist(maxerr)) > small ) go to 90
-!      extrap = .true.
-!      nrmax = 2
-!    end if
-
-!!40  continue
-!!
-!!  The smallest interval has the largest error.
-!!  Before bisecting decrease the sum of the errors over the
-!!  larger intervals (erlarg) and perform extrapolation.
-!!
-!    if ( ierro /= 3 .and. erlarg > ertest ) then
-
-!      id = nrmax
-!      jupbnd = last
-
-!      if ( last > (2+limit/2) ) then
-!        jupbnd = limit+3-last
-!      end if
-
-!      do k = id, jupbnd
-!        maxerr = iord(nrmax)
-!        errmax = elist(maxerr)
-!        if ( abs(blist(maxerr)-alist(maxerr)) > small ) then
-!          go to 90
-!        end if
-!        nrmax = nrmax+1
-!      end do
-
-!    end if
-!!
-!!  Perform extrapolation.
-!!
-!!60  continue
-
-!    numrl2 = numrl2+1
-!    rlist2(numrl2) = area
-!    call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
-!    ktmin = ktmin+1
-
-!    if ( ktmin > 5 .and. abserr < 1.0E-03 * errsum ) then
-!      ier = 5
-!    end if
-
-!    if ( abseps < abserr ) then
-
-!      ktmin = 0
-!      abserr = abseps
-!      result = reseps
-!      correc = erlarg
-!      ertest = max ( epsabs,epsrel*abs(reseps))
-
-!      if ( abserr <= ertest ) then
-!        exit
-!      end if
-
-!    end if
-!!
-!!  Prepare bisection of the smallest interval.
-!!
-!    if ( numrl2 == 1 ) then
-!      noext = .true.
-!    end if
-
-!    if ( ier == 5 ) then
-!      exit
-!    end if
-
-!    maxerr = iord(1)
-!    errmax = elist(maxerr)
-!    nrmax = 1
-!    extrap = .false.
-!    small = small * 5.0E-01
-!    erlarg = errsum
-!    go to 90
-
-!80  continue
-
-!    small = abs ( b - a ) * 3.75E-01
-!    erlarg = errsum
-!    ertest = errbnd
-!    rlist2(2) = area
-
-!90  continue
-
-!  end do
-!!
-!!  Set final result and error estimate.
-!!
-!  if ( abserr == huge ( abserr ) ) then
-!    go to 115
-!  end if
-
-!  if ( ier + ierro == 0 ) then
-!    go to 110
-!  end if
-
-!  if ( ierro == 3 ) then
-!    abserr = abserr + correc
-!  end if
-
-!  if ( ier == 0 ) then
-!    ier = 3
-!  end if
-
-!  if ( result /= 0.0E+00 .and. area /= 0.0E+00 ) then
-!    go to 105
-!  end if
-
-!  if ( abserr > errsum ) go to 115
-!  if ( area == 0.0E+00 ) go to 130
-!  go to 110
-
-!105 continue
-
-!  if ( abserr/abs(result) > errsum/abs(area) ) go to 115
-!!
-!!  Test on divergence.
-!!
-!110 continue
-
-!  if ( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
-!   defabs*1.0E-02 ) go to 130
-
-!  if ( 1.0E-02 > (result/area) .or. (result/area) > 1.0E+02 &
-!   .or. errsum > abs(area) ) then
-!    ier = 6
-!  end if
-
-!  go to 130
-!!
-!!  Compute global integral sum.
-!!
-!115 continue
-
-!  result = sum ( rlist(1:last) )
-
-!  abserr = errsum
-
-!130 continue
-
-!  if ( 2 < ier ) then
-!    ier = ier - 1
-!  end if
-
-!140 continue
-
-!  neval = 42*last-21
-
-!  return
-!end
+subroutine qagp ( f, argsint, a, b, npts2, points, epsabs, epsrel, result, abserr, &
+  neval, ier )
+!*****************************************************************************80
+!
+!! QAGP computes a definite integral.
+!
+!  Discussion:
+!
+!    The routine calculates an approximation RESULT to a definite integral
+!      I = integral of F over (A,B),
+!    hopefully satisfying
+!      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
+!
+!    Interior break points of the integration interval,
+!    where local difficulties of the integrand may occur, such as
+!    singularities or discontinuities, are provided by the user.
+!
+!  Author:
+!
+!    Robert Piessens, Elise de Doncker-Kapenger,
+!    Christian Ueberhuber, David Kahaner
+!
+!  Reference:
+!
+!    Robert Piessens, Elise de Doncker-Kapenger,
+!    Christian Ueberhuber, David Kahaner,
+!    QUADPACK, a Subroutine Package for Automatic Integration,
+!    Springer Verlag, 1983
+!
+!  Parameters:
+!
+!    Input, external real ( kind = rk ) F, the name of the function routine,
+!    of the form
+!      function f ( x )
+!      real ( kind = rk ) f
+!      real ( kind = rk ) x
+!    which evaluates the integrand function.
+!
+!    Input, real ( kind = rk ) A, B, the limits of integration.
+!
+!    Input, integer ( kind = 4 ) NPTS2, the number of user-supplied break points within
+!    the integration range, plus 2.  NPTS2 must be at least 2.
+!
+!    Input/output, real ( kind = rk ) POINTS(NPTS2), contains the user provided interior
+!    breakpoints in entries 1 through NPTS2-2.  If these points are not
+!    in ascending order on input, they will be sorted.
+!
+!    Input, real ( kind = rk ) EPSABS, EPSREL, the absolute and relative accuracy requested.
+!
+!    Output, real ( kind = rk ) RESULT, the estimated value of the integral.
+!
+!    Output, real ( kind = rk ) ABSERR, an estimate of || I - RESULT ||.
+!
+!    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
+!
+!    Output, integer ( kind = 4 ) IER, return flag.
+!                     ier = 0 normal and reliable termination of the
+!                             routine. it is assumed that the requested
+!                             accuracy has been achieved.
+!                     ier > 0 abnormal termination of the routine.
+!                             the estimates for integral and error are
+!                             less reliable. it is assumed that the
+!                             requested accuracy has not been achieved.
+!                     ier = 1 maximum number of subdivisions allowed
+!                             has been achieved. one can allow more
+!                             subdivisions by increasing the data value
+!                             of limit in qagp(and taking the according
+!                             dimension adjustments into account).
+!                             however, if this yields no improvement
+!                             it is advised to analyze the integrand
+!                             in order to determine the integration
+!                             difficulties. if the position of a local
+!                             difficulty can be determined (i.e.
+!                             singularity, discontinuity within the
+!                             interval), it should be supplied to the
+!                             routine as an element of the vector
+!                             points. if necessary, an appropriate
+!                             special-purpose integrator must be used,
+!                             which is designed for handling the type
+!                             of difficulty involved.
+!                         = 2 the occurrence of roundoff error is
+!                             detected, which prevents the requested
+!                             tolerance from being achieved.
+!                             the error may be under-estimated.
+!                         = 3 extremely bad integrand behavior occurs
+!                             at some points of the integration
+!                             interval.
+!                         = 4 the algorithm does not converge. roundoff
+!                             error is detected in the extrapolation
+!                             table. it is presumed that the requested
+!                             tolerance cannot be achieved, and that
+!                             the returned result is the best which
+!                             can be obtained.
+!                         = 5 the integral is probably divergent, or
+!                             slowly convergent. it must be noted that
+!                             divergence can occur with any other value
+!                             of ier > 0.
+!                         = 6 the input is invalid because
+!                             npts2 < 2 or
+!                             break points are specified outside
+!                             the integration range or
+!                             epsabs < 0 and epsrel < 0,
+!                             or limit < npts2.
+!                             result, abserr, neval are set to zero.
+!
+!  Local parameters:
+!
+!            the dimension of rlist2 is determined by the value of
+!            limexp in QEXTR (rlist2 should be of dimension
+!            (limexp+2) at least).
+!
+!           alist     - list of left end points of all subintervals
+!                       considered up to now
+!           blist     - list of right end points of all subintervals
+!                       considered up to now
+!           rlist(i)  - approximation to the integral over
+!                       (alist(i),blist(i))
+!           rlist2    - array of dimension at least limexp+2
+!                       containing the part of the epsilon table which
+!                       is still needed for further computations
+!           elist(i)  - error estimate applying to rlist(i)
+!           maxerr    - pointer to the interval with largest error
+!                       estimate
+!           errmax    - elist(maxerr)
+!           erlast    - error on the interval currently subdivided
+!                       (before that subdivision has taken place)
+!           area      - sum of the integrals over the subintervals
+!           errsum    - sum of the errors over the subintervals
+!           errbnd    - requested accuracy max(epsabs,epsrel*
+!                       abs(result))
+!           *****1    - variable for the left subinterval
+!           *****2    - variable for the right subinterval
+!           last      - index for subdivision
+!           nres      - number of calls to the extrapolation routine
+!           numrl2    - number of elements in rlist2. if an appropriate
+!                       approximation to the compounded integral has
+!                       obtained, it is put in rlist2(numrl2) after
+!                       numrl2 has been increased by one.
+!           erlarg    - sum of the errors over the intervals larger
+!                       than the smallest interval considered up to now
+!           extrap    - logical variable denoting that the routine
+!                       is attempting to perform extrapolation. i.e.
+!                       before subdividing the smallest interval we
+!                       try to decrease the value of erlarg.
+!           noext     - logical variable denoting that extrapolation is
+!                       no longer allowed (true-value)
+!
+  implicit none
+  integer ( kind = 4 ), parameter :: limit = 500
+  type (type_argsint), intent(in)                :: argsint
+  real ( kind = rk ) a
+  real ( kind = rk ) abseps
+  real ( kind = rk ) abserr
+  real ( kind = rk ) alist(limit)
+  real ( kind = rk ) area
+  real ( kind = rk ) area1
+  real ( kind = rk ) area12
+  real ( kind = rk ) area2
+  real ( kind = rk ) a1
+  real ( kind = rk ) a2
+  real ( kind = rk ) b
+  real ( kind = rk ) blist(limit)
+  real ( kind = rk ) b1
+  real ( kind = rk ) b2
+  real ( kind = rk ) correc
+  real ( kind = rk ) defabs
+  real ( kind = rk ) defab1
+  real ( kind = rk ) defab2
+  real ( kind = rk ) dres
+  real ( kind = rk ) elist(limit)
+  real ( kind = rk ) epsabs
+  real ( kind = rk ) epsrel
+  real ( kind = rk ) erlarg
+  real ( kind = rk ) erlast
+  real ( kind = rk ) errbnd
+  real ( kind = rk ) errmax
+  real ( kind = rk ) error1
+  real ( kind = rk ) erro12
+  real ( kind = rk ) error2
+  real ( kind = rk ) errsum
+  real ( kind = rk ) ertest
+  logical extrap
+  real ( kind = rk ), external :: f
+  integer ( kind = 4 ) i
+  integer ( kind = 4 ) id
+  integer ( kind = 4 ) ier
+  integer ( kind = 4 ) ierro
+  integer ( kind = 4 ) ind1
+  integer ( kind = 4 ) ind2
+  integer ( kind = 4 ) iord(limit)
+  integer ( kind = 4 ) iroff1
+  integer ( kind = 4 ) iroff2
+  integer ( kind = 4 ) iroff3
+  integer ( kind = 4 ) j
+  integer ( kind = 4 ) jlow
+  integer ( kind = 4 ) jupbnd
+  integer ( kind = 4 ) k
+  integer ( kind = 4 ) ksgn
+  integer ( kind = 4 ) ktmin
+  integer ( kind = 4 ) last
+  integer ( kind = 4 ) levcur
+  integer ( kind = 4 ) level(limit)
+  integer ( kind = 4 ) levmax
+  integer ( kind = 4 ) maxerr
+  integer ( kind = 4 ) ndin(40)
+  integer ( kind = 4 ) neval
+  integer ( kind = 4 ) nint
+  logical noext
+  integer ( kind = 4 ) npts
+  integer ( kind = 4 ) npts2
+  integer ( kind = 4 ) nres
+  integer ( kind = 4 ) nrmax
+  integer ( kind = 4 ) numrl2
+  real ( kind = rk ) points(40)
+  real ( kind = rk ) pts(40)
+  real ( kind = rk ) resa
+  real ( kind = rk ) resabs
+  real ( kind = rk ) reseps
+  real ( kind = rk ) result
+  real ( kind = rk ) res3la(3)
+  real ( kind = rk ) rlist(limit)
+  real ( kind = rk ) rlist2(52)
+  real ( kind = rk ) sign
+  real ( kind = rk ) temp
+!
+!  Test on validity of parameters.
+!
+  ier = 0
+  neval = 0
+  last = 0
+  result = 0.0E+00
+  abserr = 0.0E+00
+  alist(1) = a
+  blist(1) = b
+  rlist(1) = 0.0E+00
+  elist(1) = 0.0E+00
+  iord(1) = 0
+  level(1) = 0
+  npts = npts2 - 2
+  if ( npts2 < 2 ) then
+    ier = 6
+    return
+  else if ( limit <= npts .or. ( epsabs < 0.0E+00 .and. &
+    epsrel < 0.0E+00) ) then
+    ier = 6
+    return
+  end if
+!
+!  If any break points are provided, sort them into an
+!  ascending sequence.
+!
+  if ( b < a ) then
+    sign = -1.0E+00
+  else
+    sign = +1.0E+00
+  end if
+  pts(1) = min ( a, b )
+  do i = 1, npts
+    pts(i+1) = points(i)
+  end do
+  pts(npts+2) = max ( a, b )
+  nint = npts+1
+  a1 = pts(1)
+  if ( npts /= 0 ) then
+    do i = 1, nint
+      do j = i+1, nint+1
+        if ( pts(j) < pts(i) ) then
+          temp   = pts(i)
+          pts(i) = pts(j)
+          pts(j) = temp
+        end if
+      end do
+    end do
+    if ( pts(1) /= min ( a, b ) .or. pts(nint+1) /= max ( a, b ) ) then
+      ier = 6
+      return
+    end if
+  end if
+!
+!  Compute first integral and error approximations.
+!
+  resabs = 0.0E+00
+  do i = 1, nint
+    b1 = pts(i+1)
+    call qk21 ( f, argsint, a1, b1, area1, error1, defabs, resa )
+    abserr = abserr + error1
+    result = result + area1
+    ndin(i) = 0
+    if ( error1 == resa .and. error1 /= 0.0E+00 ) then
+      ndin(i) = 1
+    end if
+    resabs = resabs + defabs
+    level(i) = 0
+    elist(i) = error1
+    alist(i) = a1
+    blist(i) = b1
+    rlist(i) = area1
+    iord(i) = i
+    a1 = b1
+  end do
+  errsum = 0.0E+00
+  do i = 1, nint
+    if ( ndin(i) == 1 ) then
+      elist(i) = abserr
+    end if
+    errsum = errsum + elist(i)
+  end do
+!
+!  Test on accuracy.
+!
+  last = nint
+  neval = 21 * nint
+  dres = abs ( result )
+  errbnd = max ( epsabs, epsrel * dres )
+  if ( abserr <= 1.0E+02 * epsilon ( resabs ) * resabs .and. &
+    abserr > errbnd ) then
+    ier = 2
+  end if
+  if ( nint /= 1 ) then
+    do i = 1, npts
+      jlow = i+1
+      ind1 = iord(i)
+      do j = jlow, nint
+        ind2 = iord(j)
+        if ( elist(ind1) <= elist(ind2) ) then
+          ind1 = ind2
+          k = j
+        end if
+      end do
+      if ( ind1 /= iord(i) ) then
+        iord(k) = iord(i)
+        iord(i) = ind1
+      end if
+    end do
+    if ( limit < npts2 ) then
+      ier = 1
+    end if
+  end if
+  if ( ier /= 0 .or. abserr <= errbnd ) then
+    return
+  end if
+!
+!  Initialization
+!
+  rlist2(1) = result
+  maxerr = iord(1)
+  errmax = elist(maxerr)
+  area = result
+  nrmax = 1
+  nres = 0
+  numrl2 = 1
+  ktmin = 0
+  extrap = .false.
+  noext = .false.
+  erlarg = errsum
+  ertest = errbnd
+  levmax = 1
+  iroff1 = 0
+  iroff2 = 0
+  iroff3 = 0
+  ierro = 0
+  abserr = huge ( abserr )
+  if ( dres >= ( 1.0E+00 - 0.5E+00 * epsilon ( resabs ) ) * resabs ) then
+    ksgn = 1
+  else
+    ksgn = -1
+  end if
+  do last = npts2, limit
+!
+!  Bisect the subinterval with the NRMAX-th largest error estimate.
+!
+    levcur = level(maxerr) + 1
+    a1 = alist(maxerr)
+    b1 = 0.5E+00 * ( alist(maxerr) + blist(maxerr) )
+    a2 = b1
+    b2 = blist(maxerr)
+    erlast = errmax
+    call qk21 ( f, argsint, a1, b1, area1, error1, resa, defab1 )
+    call qk21 ( f, argsint, a2, b2, area2, error2, resa, defab2 )
+!
+!  Improve previous approximations to integral and error
+!  and test for accuracy.
+!
+    neval = neval + 42
+    area12 = area1 + area2
+    erro12 = error1 + error2
+    errsum = errsum + erro12 -errmax
+    area = area + area12 - rlist(maxerr)
+    if ( defab1 /= error1 .and. defab2 /= error2 ) then
+      if ( abs ( rlist ( maxerr ) - area12 ) <= 1.0E-05 * abs(area12) .and. &
+        erro12 >= 9.9E-01 * errmax ) then
+        if ( extrap ) then
+          iroff2 = iroff2+1
+        else
+          iroff1 = iroff1+1
+        end if
+      end if
+      if ( last > 10 .and. erro12 > errmax ) then
+        iroff3 = iroff3 + 1
+      end if
+    end if
+    level(maxerr) = levcur
+    level(last) = levcur
+    rlist(maxerr) = area1
+    rlist(last) = area2
+    errbnd = max ( epsabs, epsrel * abs ( area ) )
+!
+!  Test for roundoff error and eventually set error flag.
+!
+    if ( 10 <= iroff1 + iroff2 .or. 20 <= iroff3 ) then
+      ier = 2
+    end if
+    if ( 5 <= iroff2 ) then
+      ierro = 3
+    end if
+!
+!  Set error flag in the case that the number of subintervals
+!  equals limit.
+!
+    if ( last == limit ) then
+      ier = 1
+    end if
+!
+!  Set error flag in the case of bad integrand behavior
+!  at a point of the integration range
+!
+    if ( max ( abs(a1), abs(b2)) <= ( 1.0E+00 + 1.0E+03 * epsilon ( a1 ) )* &
+    ( abs ( a2 ) + 1.0E+03 * tiny ( a2 ) ) ) then
+      ier = 4
+    end if
+!
+!  Append the newly-created intervals to the list.
+!
+    if ( error2 <= error1 ) then
+      alist(last) = a2
+      blist(maxerr) = b1
+      blist(last) = b2
+      elist(maxerr) = error1
+      elist(last) = error2
+    else
+      alist(maxerr) = a2
+      alist(last) = a1
+      blist(last) = b1
+      rlist(maxerr) = area2
+      rlist(last) = area1
+      elist(maxerr) = error2
+      elist(last) = error1
+    end if
+!
+!  Call QSORT to maintain the descending ordering
+!  in the list of error estimates and select the subinterval
+!  with nrmax-th largest error estimate (to be bisected next).
+!
+    call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
+    if ( errsum <= errbnd ) then
+      go to 190
+    end if
+    if ( ier /= 0 ) then
+      exit
+    end if
+    if ( noext ) then
+      cycle
+    end if
+    erlarg = erlarg - erlast
+    if ( levcur+1 <= levmax ) then
+      erlarg = erlarg + erro12
+    end if
+!
+!  Test whether the interval to be bisected next is the
+!  smallest interval.
+!
+    if ( .not. extrap ) then
+      if ( level(maxerr)+1 <= levmax ) then
+        cycle
+      end if
+      extrap = .true.
+      nrmax = 2
+    end if
+!
+!  The smallest interval has the largest error.
+!  Before bisecting decrease the sum of the errors over the
+!  larger intervals (erlarg) and perform extrapolation.
+!
+    if ( ierro /= 3 .and. erlarg > ertest ) then
+      id = nrmax
+      jupbnd = last
+      if ( last > (2+limit/2) ) then
+        jupbnd = limit+3-last
+      end if
+      do k = id, jupbnd
+        maxerr = iord(nrmax)
+        errmax = elist(maxerr)
+        if ( level(maxerr)+1 <= levmax ) then
+          go to 160
+        end if
+        nrmax = nrmax + 1
+      end do
+    end if
+!
+!  Perform extrapolation.
+!
+    numrl2 = numrl2 + 1
+    rlist2(numrl2) = area
+    if ( numrl2 <= 2 ) then
+      go to 155
+    end if
+    call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
+    ktmin = ktmin+1
+    if ( 5 < ktmin .and. abserr < 1.0E-03 * errsum ) then
+      ier = 5
+    end if
+    if ( abseps < abserr ) then
+      ktmin = 0
+      abserr = abseps
+      result = reseps
+      correc = erlarg
+      ertest = max ( epsabs, epsrel * abs(reseps) )
+      if ( abserr < ertest ) then
+        exit
+      end if
+    end if
+!
+!  Prepare bisection of the smallest interval.
+!
+    if ( numrl2 == 1 ) then
+      noext = .true.
+    end if
+    if ( 5 <= ier ) then
+      exit
+    end if
+155 continue
+    maxerr = iord(1)
+    errmax = elist(maxerr)
+    nrmax = 1
+    extrap = .false.
+    levmax = levmax + 1
+    erlarg = errsum
+160 continue
+  end do
+!
+!  Set the final result.
+!
+  if ( abserr == huge ( abserr ) ) then
+    go to 190
+  end if
+  if ( ( ier + ierro ) == 0 ) then
+    go to 180
+  end if
+  if ( ierro == 3 ) then
+    abserr = abserr + correc
+  end if
+  if ( ier == 0 ) then
+    ier = 3
+  end if
+  if ( result /= 0.0E+00 .and. area /= 0.0E+00 ) then
+    go to 175
+  end if
+  if ( errsum < abserr ) then
+    go to 190
+  end if
+  if ( area == 0.0E+00 ) then
+    go to 210
+  end if
+  go to 180
+175 continue
+  if ( abserr / abs(result) > errsum / abs(area) ) then
+    go to 190
+  end if
+!
+!  Test on divergence.
+!
+  180 continue
+  if ( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
+    resabs*1.0E-02 ) go to 210
+  if ( 1.0E-02 > (result/area) .or. (result/area) > 1.0E+02 .or. &
+    errsum > abs(area) ) then
+    ier = 6
+  end if
+  go to 210
+!
+!  Compute global integral sum.
+!
+190 continue
+  result = sum ( rlist(1:last) )
+  abserr = errsum
+210 continue
+  if ( 2 < ier ) then
+    ier = ier - 1
+  end if
+  result = result * sign
+  return
+end
+subroutine qags ( f, argsint, a, b, epsabs, epsrel, result, abserr, neval, ier )
+!*****************************************************************************80
+!
+!! QAGS estimates the integral of a function.
+!
+!  Discussion:
+!
+!    The routine calculates an approximation RESULT to a definite integral
+!      I = integral of F over (A,B),
+!    hopefully satisfying
+!      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
+!
+!  Author:
+!
+!    Robert Piessens, Elise de Doncker-Kapenger,
+!    Christian Ueberhuber, David Kahaner
+!
+!  Reference:
+!
+!    Robert Piessens, Elise de Doncker-Kapenger,
+!    Christian Ueberhuber, David Kahaner,
+!    QUADPACK, a Subroutine Package for Automatic Integration,
+!    Springer Verlag, 1983
+!
+!  Parameters:
+!
+!    Input, external real ( kind = rk ) F, the name of the function routine, of the form
+!      function f ( x )
+!      real ( kind = rk ) f
+!      real ( kind = rk ) x
+!    which evaluates the integrand function.
+!
+!    Input, real ( kind = rk ) A, B, the limits of integration.
+!
+!    Input, real ( kind = rk ) EPSABS, EPSREL, the absolute and relative accuracy requested.
+!
+!    Output, real ( kind = rk ) RESULT, the estimated value of the integral.
+!
+!    Output, real ( kind = rk ) ABSERR, an estimate of || I - RESULT ||.
+!
+!    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
+!
+!    Output, integer ( kind = 4 ) IER, error flag.
+!                     ier = 0 normal and reliable termination of the
+!                             routine. it is assumed that the requested
+!                             accuracy has been achieved.
+!                     ier > 0 abnormal termination of the routine
+!                             the estimates for integral and error are
+!                             less reliable. it is assumed that the
+!                             requested accuracy has not been achieved.
+!                         = 1 maximum number of subdivisions allowed
+!                             has been achieved. one can allow more sub-
+!                             divisions by increasing the data value of
+!                             limit in qags (and taking the according
+!                             dimension adjustments into account).
+!                             however, if this yields no improvement
+!                             it is advised to analyze the integrand
+!                             in order to determine the integration
+!                             difficulties. if the position of a
+!                             local difficulty can be determined (e.g.
+!                             singularity, discontinuity within the
+!                             interval) one will probably gain from
+!                             splitting up the interval at this point
+!                             and calling the integrator on the sub-
+!                             ranges. if possible, an appropriate
+!                             special-purpose integrator should be used,
+!                             which is designed for handling the type
+!                             of difficulty involved.
+!                         = 2 the occurrence of roundoff error is detec-
+!                             ted, which prevents the requested
+!                             tolerance from being achieved.
+!                             the error may be under-estimated.
+!                         = 3 extremely bad integrand behavior occurs
+!                             at some  points of the integration
+!                             interval.
+!                         = 4 the algorithm does not converge. roundoff
+!                             error is detected in the extrapolation
+!                             table. it is presumed that the requested
+!                             tolerance cannot be achieved, and that the
+!                             returned result is the best which can be
+!                             obtained.
+!                         = 5 the integral is probably divergent, or
+!                             slowly convergent. it must be noted that
+!                             divergence can occur with any other value
+!                             of ier.
+!                         = 6 the input is invalid, because
+!                             epsabs < 0 and epsrel < 0,
+!                             result, abserr and neval are set to zero.
+!
+!  Local Parameters:
+!
+!           alist     - list of left end points of all subintervals
+!                       considered up to now
+!           blist     - list of right end points of all subintervals
+!                       considered up to now
+!           rlist(i)  - approximation to the integral over
+!                       (alist(i),blist(i))
+!           rlist2    - array of dimension at least limexp+2 containing
+!                       the part of the epsilon table which is still
+!                       needed for further computations
+!           elist(i)  - error estimate applying to rlist(i)
+!           maxerr    - pointer to the interval with largest error
+!                       estimate
+!           errmax    - elist(maxerr)
+!           erlast    - error on the interval currently subdivided
+!                       (before that subdivision has taken place)
+!           area      - sum of the integrals over the subintervals
+!           errsum    - sum of the errors over the subintervals
+!           errbnd    - requested accuracy max(epsabs,epsrel*
+!                       abs(result))
+!           *****1    - variable for the left interval
+!           *****2    - variable for the right interval
+!           last      - index for subdivision
+!           nres      - number of calls to the extrapolation routine
+!           numrl2    - number of elements currently in rlist2. if an
+!                       appropriate approximation to the compounded
+!                       integral has been obtained it is put in
+!                       rlist2(numrl2) after numrl2 has been increased
+!                       by one.
+!           small     - length of the smallest interval considered
+!                       up to now, multiplied by 1.5
+!           erlarg    - sum of the errors over the intervals larger
+!                       than the smallest interval considered up to now
+!           extrap    - logical variable denoting that the routine is
+!                       attempting to perform extrapolation i.e. before
+!                       subdividing the smallest interval we try to
+!                       decrease the value of erlarg.
+!           noext     - logical variable denoting that extrapolation
+!                       is no longer allowed (true value)
+!
+  implicit none
+  type (type_argsint), intent(in)        :: argsint
+  integer ( kind = 4 ), parameter :: limit = 500
+  real ( kind = rk ) a
+  real ( kind = rk ) abseps
+  real ( kind = rk ) abserr
+  real ( kind = rk ) alist(limit)
+  real ( kind = rk ) area
+  real ( kind = rk ) area1
+  real ( kind = rk ) area12
+  real ( kind = rk ) area2
+  real ( kind = rk ) a1
+  real ( kind = rk ) a2
+  real ( kind = rk ) b
+  real ( kind = rk ) blist(limit)
+  real ( kind = rk ) b1
+  real ( kind = rk ) b2
+  real ( kind = rk ) correc
+  real ( kind = rk ) defabs
+  real ( kind = rk ) defab1
+  real ( kind = rk ) defab2
+  real ( kind = rk ) dres
+  real ( kind = rk ) elist(limit)
+  real ( kind = rk ) epsabs
+  real ( kind = rk ) epsrel
+  real ( kind = rk ) erlarg
+  real ( kind = rk ) erlast
+  real ( kind = rk ) errbnd
+  real ( kind = rk ) errmax
+  real ( kind = rk ) error1
+  real ( kind = rk ) error2
+  real ( kind = rk ) erro12
+  real ( kind = rk ) errsum
+  real ( kind = rk ) ertest
+  logical extrap
+  real ( kind = rk ), external :: f
+  integer ( kind = 4 ) id
+  integer ( kind = 4 ) ier
+  integer ( kind = 4 ) ierro
+  integer ( kind = 4 ) iord(limit)
+  integer ( kind = 4 ) iroff1
+  integer ( kind = 4 ) iroff2
+  integer ( kind = 4 ) iroff3
+  integer ( kind = 4 ) jupbnd
+  integer ( kind = 4 ) k
+  integer ( kind = 4 ) ksgn
+  integer ( kind = 4 ) ktmin
+  integer ( kind = 4 ) last
+  logical noext
+  integer ( kind = 4 ) maxerr
+  integer ( kind = 4 ) neval
+  integer ( kind = 4 ) nres
+  integer ( kind = 4 ) nrmax
+  integer ( kind = 4 ) numrl2
+  real ( kind = rk ) resabs
+  real ( kind = rk ) reseps
+  real ( kind = rk ) result
+  real ( kind = rk ) res3la(3)
+  real ( kind = rk ) rlist(limit)
+  real ( kind = rk ) rlist2(52)
+  real ( kind = rk ) small
+!
+!  The dimension of rlist2 is determined by the value of
+!  limexp in QEXTR (rlist2 should be of dimension
+!  (limexp+2) at least).
+!
+!  Test on validity of parameters.
+!
+  ier = 0
+  neval = 0
+  last = 0
+  result = 0.0E+00
+  abserr = 0.0E+00
+  alist(1) = a
+  blist(1) = b
+  rlist(1) = 0.0E+00
+  elist(1) = 0.0E+00
+  if ( epsabs < 0.0E+00 .and. epsrel < 0.0E+00 ) then
+    ier = 6
+    return
+  end if
+!
+!  First approximation to the integral.
+!
+  ierro = 0
+  call qk21 ( f, argsint, a, b, result, abserr, defabs, resabs )
+!
+!  Test on accuracy.
+!
+  dres = abs ( result )
+  errbnd = max ( epsabs, epsrel * dres )
+  last = 1
+  rlist(1) = result
+  elist(1) = abserr
+  iord(1) = 1
+  if ( abserr <= 1.0E+02 * epsilon ( defabs ) * defabs .and. &
+    abserr > errbnd ) then
+    ier = 2
+  end if
+  if ( limit == 1 ) then
+    ier = 1
+  end if
+  if ( ier /= 0 .or. (abserr <= errbnd .and. abserr /= resabs ) .or. &
+    abserr == 0.0E+00 ) go to 140
+!
+!  Initialization.
+!
+  rlist2(1) = result
+  errmax = abserr
+  maxerr = 1
+  area = result
+  errsum = abserr
+  abserr = huge ( abserr )
+  nrmax = 1
+  nres = 0
+  numrl2 = 2
+  ktmin = 0
+  extrap = .false.
+  noext = .false.
+  iroff1 = 0
+  iroff2 = 0
+  iroff3 = 0
+  if ( dres >= (1.0E+00 - 5.0E+01* epsilon ( defabs ) ) * defabs ) then
+    ksgn = 1
+  else
+    ksgn = -1
+  end if
+  do last = 2, limit
+!
+!  Bisect the subinterval with the nrmax-th largest error estimate.
+!
+    a1 = alist(maxerr)
+    b1 = 5.0E-01 * ( alist(maxerr) + blist(maxerr) )
+    a2 = b1
+    b2 = blist(maxerr)
+    erlast = errmax
+    call qk21 ( f, argsint, a1, b1, area1, error1, resabs, defab1 )
+    call qk21 ( f, argsint, a2, b2, area2, error2, resabs, defab2 )
+!
+!  Improve previous approximations to integral and error
+!  and test for accuracy.
+!
+    area12 = area1+area2
+    erro12 = error1+error2
+    errsum = errsum+erro12-errmax
+    area = area+area12-rlist(maxerr)
+    if ( defab1 == error1 .or. defab2 == error2 ) go to 15
+    if ( abs ( rlist(maxerr) - area12) > 1.0E-05 * abs(area12) &
+      .or. erro12 < 9.9E-01 * errmax ) go to 10
+    if ( extrap ) then
+      iroff2 = iroff2+1
+    else
+      iroff1 = iroff1+1
+    end if
+10  continue
+    if ( last > 10 .and. erro12 > errmax ) then
+      iroff3 = iroff3+1
+    end if
+15  continue
+    rlist(maxerr) = area1
+    rlist(last) = area2
+    errbnd = max ( epsabs, epsrel*abs(area) )
+!
+!  Test for roundoff error and eventually set error flag.
+!
+    if ( iroff1+iroff2 >= 10 .or. iroff3 >= 20 ) then
+      ier = 2
+    end if
+    if ( iroff2 >= 5 ) then
+      ierro = 3
+    end if
+!
+!  Set error flag in the case that the number of subintervals
+!  equals limit.
+!
+    if ( last == limit ) then
+      ier = 1
+    end if
+!
+!  Set error flag in the case of bad integrand behavior
+!  at a point of the integration range.
+!
+    if ( max ( abs(a1),abs(b2)) <= (1.0E+00+1.0E+03* epsilon ( a1 ) )* &
+      (abs(a2)+1.0E+03* tiny ( a2 ) ) ) then
+      ier = 4
+    end if
+!
+!  Append the newly-created intervals to the list.
+!
+    if ( error2 <= error1 ) then
+      alist(last) = a2
+      blist(maxerr) = b1
+      blist(last) = b2
+      elist(maxerr) = error1
+      elist(last) = error2
+    else
+      alist(maxerr) = a2
+      alist(last) = a1
+      blist(last) = b1
+      rlist(maxerr) = area2
+      rlist(last) = area1
+      elist(maxerr) = error2
+      elist(last) = error1
+    end if
+!
+!  Call QSORT to maintain the descending ordering
+!  in the list of error estimates and select the subinterval
+!  with nrmax-th largest error estimate (to be bisected next).
+!
+    call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
+    if ( errsum <= errbnd ) go to 115
+    if ( ier /= 0 ) then
+      exit
+    end if
+    if ( last == 2 ) go to 80
+    if ( noext ) go to 90
+    erlarg = erlarg-erlast
+    if ( abs(b1-a1) > small ) then
+      erlarg = erlarg+erro12
+    end if
+!
+!  Test whether the interval to be bisected next is the
+!  smallest interval.
+!
+    if ( .not. extrap ) then
+      if ( abs(blist(maxerr)-alist(maxerr)) > small ) go to 90
+      extrap = .true.
+      nrmax = 2
+    end if
+!40  continue
+!
+!  The smallest interval has the largest error.
+!  Before bisecting decrease the sum of the errors over the
+!  larger intervals (erlarg) and perform extrapolation.
+!
+    if ( ierro /= 3 .and. erlarg > ertest ) then
+      id = nrmax
+      jupbnd = last
+      if ( last > (2+limit/2) ) then
+        jupbnd = limit+3-last
+      end if
+      do k = id, jupbnd
+        maxerr = iord(nrmax)
+        errmax = elist(maxerr)
+        if ( abs(blist(maxerr)-alist(maxerr)) > small ) then
+          go to 90
+        end if
+        nrmax = nrmax+1
+      end do
+    end if
+!
+!  Perform extrapolation.
+!
+!60  continue
+    numrl2 = numrl2+1
+    rlist2(numrl2) = area
+    call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
+    ktmin = ktmin+1
+    if ( ktmin > 5 .and. abserr < 1.0E-03 * errsum ) then
+      ier = 5
+    end if
+    if ( abseps < abserr ) then
+      ktmin = 0
+      abserr = abseps
+      result = reseps
+      correc = erlarg
+      ertest = max ( epsabs,epsrel*abs(reseps))
+      if ( abserr <= ertest ) then
+        exit
+      end if
+    end if
+!
+!  Prepare bisection of the smallest interval.
+!
+    if ( numrl2 == 1 ) then
+      noext = .true.
+    end if
+    if ( ier == 5 ) then
+      exit
+    end if
+    maxerr = iord(1)
+    errmax = elist(maxerr)
+    nrmax = 1
+    extrap = .false.
+    small = small * 5.0E-01
+    erlarg = errsum
+    go to 90
+80  continue
+    small = abs ( b - a ) * 3.75E-01
+    erlarg = errsum
+    ertest = errbnd
+    rlist2(2) = area
+90  continue
+  end do
+!
+!  Set final result and error estimate.
+!
+  if ( abserr == huge ( abserr ) ) then
+    go to 115
+  end if
+  if ( ier + ierro == 0 ) then
+    go to 110
+  end if
+  if ( ierro == 3 ) then
+    abserr = abserr + correc
+  end if
+  if ( ier == 0 ) then
+    ier = 3
+  end if
+  if ( result /= 0.0E+00 .and. area /= 0.0E+00 ) then
+    go to 105
+  end if
+  if ( abserr > errsum ) go to 115
+  if ( area == 0.0E+00 ) go to 130
+  go to 110
+105 continue
+  if ( abserr/abs(result) > errsum/abs(area) ) go to 115
+!
+!  Test on divergence.
+!
+110 continue
+  if ( ksgn == (-1) .and. max ( abs(result),abs(area)) <=  &
+   defabs*1.0E-02 ) go to 130
+  if ( 1.0E-02 > (result/area) .or. (result/area) > 1.0E+02 &
+   .or. errsum > abs(area) ) then
+    ier = 6
+  end if
+  go to 130
+!
+!  Compute global integral sum.
+!
+115 continue
+  result = sum ( rlist(1:last) )
+  abserr = errsum
+130 continue
+  if ( 2 < ier ) then
+    ier = ier - 1
+  end if
+140 continue
+  neval = 42*last-21
+  return
+end
 !subroutine qawc ( f, a, b, c, epsabs, epsrel, result, abserr, neval, ier )
 
 !!*****************************************************************************80
@@ -6677,191 +6544,182 @@ end
 
 !  return
 !end
-!subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
-
-!!*****************************************************************************80
-!!
-!!! QK21 carries out a 21 point Gauss-Kronrod quadrature rule.
-!!
-!!  Discussion:
-!!
-!!    This routine approximates
-!!      I = integral ( A <= X <= B ) F(X) dx
-!!    with an error estimate, and
-!!      J = integral ( A <= X <= B ) | F(X) | dx
-!!
-!!  Author:
-!!
-!!    Robert Piessens, Elise de Doncker-Kapenger,
-!!    Christian Ueberhuber, David Kahaner
-!!
-!!  Reference:
-!!
-!!    Robert Piessens, Elise de Doncker-Kapenger,
-!!    Christian Ueberhuber, David Kahaner,
-!!    QUADPACK, a Subroutine Package for Automatic Integration,
-!!    Springer Verlag, 1983
-!!
-!!  Parameters:
-!!
-!!    Input, external real ( kind = rk ) F, the name of the function routine, of the form
-!!      function f ( x )
-!!      real ( kind = rk ) f
-!!      real ( kind = rk ) x
-!!    which evaluates the integrand function.
-!!
-!!    Input, real ( kind = rk ) A, B, the limits of integration.
-!!
-!!    Output, real ( kind = rk ) RESULT, the estimated value of the integral.
-!!    RESULT is computed by applying the 21-point Kronrod rule (resk)
-!!    obtained by optimal addition of abscissae to the 10-point Gauss
-!!    rule (resg).
-!!
-!!    Output, real ( kind = rk ) ABSERR, an estimate of | I - RESULT |.
-!!
-!!    Output, real ( kind = rk ) RESABS, approximation to the integral of the absolute
-!!    value of F.
-!!
-!!    Output, real ( kind = rk ) RESASC, approximation to the integral | F-I/(B-A) |
-!!    over [A,B].
-!!
-!  implicit none
-
-!  real ( kind = rk ) a
-!  real ( kind = rk ) absc
-!  real ( kind = rk ) abserr
-!  real ( kind = rk ) b
-!  real ( kind = rk ) centr
-!  real ( kind = rk ) dhlgth
-!  real ( kind = rk ), external :: f
-!  real ( kind = rk ) fc
-!  real ( kind = rk ) fsum
-!  real ( kind = rk ) fval1
-!  real ( kind = rk ) fval2
-!  real ( kind = rk ) fv1(10)
-!  real ( kind = rk ) fv2(10)
-!  real ( kind = rk ) hlgth
-!  integer ( kind = 4 ) j
-!  integer ( kind = 4 ) jtw
-!  integer ( kind = 4 ) jtwm1
-!  real ( kind = rk ) resabs
-!  real ( kind = rk ) resasc
-!  real ( kind = rk ) resg
-!  real ( kind = rk ) resk
-!  real ( kind = rk ) reskh
-!  real ( kind = rk ) result
-!  real ( kind = rk ) wg(5)
-!  real ( kind = rk ) wgk(11)
-!  real ( kind = rk ) xgk(11)
-!!
-!!           the abscissae and weights are given for the interval (-1,1).
-!!           because of symmetry only the positive abscissae and their
-!!           corresponding weights are given.
-!!
-!!           xgk    - abscissae of the 21-point Kronrod rule
-!!                    xgk(2), xgk(4), ...  abscissae of the 10-point
-!!                    Gauss rule
-!!                    xgk(1), xgk(3), ...  abscissae which are optimally
-!!                    added to the 10-point Gauss rule
-!!
-!!           wgk    - weights of the 21-point Kronrod rule
-!!
-!!           wg     - weights of the 10-point Gauss rule
-!!
-!  data xgk(1),xgk(2),xgk(3),xgk(4),xgk(5),xgk(6),xgk(7),xgk(8), &
-!    xgk(9),xgk(10),xgk(11)/ &
-!       9.956571630258081E-01,     9.739065285171717E-01, &
-!       9.301574913557082E-01,     8.650633666889845E-01, &
-!       7.808177265864169E-01,     6.794095682990244E-01, &
-!       5.627571346686047E-01,     4.333953941292472E-01, &
-!       2.943928627014602E-01,     1.488743389816312E-01, &
-!       0.000000000000000E+00/
-!!
-!  data wgk(1),wgk(2),wgk(3),wgk(4),wgk(5),wgk(6),wgk(7),wgk(8), &
-!    wgk(9),wgk(10),wgk(11)/ &
-!       1.169463886737187E-02,     3.255816230796473E-02, &
-!       5.475589657435200E-02,     7.503967481091995E-02, &
-!       9.312545458369761E-02,     1.093871588022976E-01, &
-!       1.234919762620659E-01,     1.347092173114733E-01, &
-!       1.427759385770601E-01,     1.477391049013385E-01, &
-!       1.494455540029169E-01/
-!!
-!  data wg(1),wg(2),wg(3),wg(4),wg(5)/ &
-!       6.667134430868814E-02,     1.494513491505806E-01, &
-!       2.190863625159820E-01,     2.692667193099964E-01, &
-!       2.955242247147529E-01/
-!!
-!!
-!!           list of major variables
-!!
-!!           centr  - mid point of the interval
-!!           hlgth  - half-length of the interval
-!!           absc   - abscissa
-!!           fval*  - function value
-!!           resg   - result of the 10-point Gauss formula
-!!           resk   - result of the 21-point Kronrod formula
-!!           reskh  - approximation to the mean value of f over (a,b),
-!!                    i.e. to i/(b-a)
-!!
-!  centr = 5.0E-01*(a+b)
-!  hlgth = 5.0E-01*(b-a)
-!  dhlgth = abs(hlgth)
-!!
-!!  Compute the 21-point Kronrod approximation to the
-!!  integral, and estimate the absolute error.
-!!
-!  resg = 0.0E+00
-!  fc = f(centr)
-!  resk = wgk(11)*fc
-!  resabs = abs(resk)
-
-!  do j = 1, 5
-!    jtw = 2*j
-!    absc = hlgth*xgk(jtw)
-!    fval1 = f(centr-absc)
-!    fval2 = f(centr+absc)
-!    fv1(jtw) = fval1
-!    fv2(jtw) = fval2
-!    fsum = fval1+fval2
-!    resg = resg+wg(j)*fsum
-!    resk = resk+wgk(jtw)*fsum
-!    resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
-!  end do
-
-!  do j = 1, 5
-!    jtwm1 = 2*j-1
-!    absc = hlgth*xgk(jtwm1)
-!    fval1 = f(centr-absc)
-!    fval2 = f(centr+absc)
-!    fv1(jtwm1) = fval1
-!    fv2(jtwm1) = fval2
-!    fsum = fval1+fval2
-!    resk = resk+wgk(jtwm1)*fsum
-!    resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
-!  end do
-
-!  reskh = resk*5.0E-01
-!  resasc = wgk(11)*abs(fc-reskh)
-
-!  do j = 1, 10
-!    resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
-!  end do
-
-!  result = resk*hlgth
-!  resabs = resabs*dhlgth
-!  resasc = resasc*dhlgth
-!  abserr = abs((resk-resg)*hlgth)
-
-!  if ( resasc /= 0.0E+00.and.abserr /= 0.0E+00) then
-!    abserr = resasc*min ( 1.0E+00,(2.0E+02*abserr/resasc)**1.5E+00)
-!  end if
-
-!  if ( resabs > tiny ( resabs ) /(5.0E+01* epsilon ( resabs ) )) then
-!    abserr = max (( epsilon ( resabs ) *5.0E+01)*resabs,abserr)
-!  end if
-
-!  return
-!end
+subroutine qk21 ( f, argsint, a, b, result, abserr, resabs, resasc )
+!*****************************************************************************80
+!
+!! QK21 carries out a 21 point Gauss-Kronrod quadrature rule.
+!
+!  Discussion:
+!
+!    This routine approximates
+!      I = integral ( A <= X <= B ) F(X) dx
+!    with an error estimate, and
+!      J = integral ( A <= X <= B ) | F(X) | dx
+!
+!  Author:
+!
+!    Robert Piessens, Elise de Doncker-Kapenger,
+!    Christian Ueberhuber, David Kahaner
+!
+!  Reference:
+!
+!    Robert Piessens, Elise de Doncker-Kapenger,
+!    Christian Ueberhuber, David Kahaner,
+!    QUADPACK, a Subroutine Package for Automatic Integration,
+!    Springer Verlag, 1983
+!
+!  Parameters:
+!
+!    Input, external real ( kind = rk ) F, the name of the function routine, of the form
+!      function f ( x )
+!      real ( kind = rk ) f
+!      real ( kind = rk ) x
+!    which evaluates the integrand function.
+!
+!    Input, real ( kind = rk ) A, B, the limits of integration.
+!
+!    Output, real ( kind = rk ) RESULT, the estimated value of the integral.
+!    RESULT is computed by applying the 21-point Kronrod rule (resk)
+!    obtained by optimal addition of abscissae to the 10-point Gauss
+!    rule (resg).
+!
+!    Output, real ( kind = rk ) ABSERR, an estimate of | I - RESULT |.
+!
+!    Output, real ( kind = rk ) RESABS, approximation to the integral of the absolute
+!    value of F.
+!
+!    Output, real ( kind = rk ) RESASC, approximation to the integral | F-I/(B-A) |
+!    over [A,B].
+!
+  implicit none
+  type (type_argsint), intent(in)        :: argsint
+  real ( kind = rk ) a
+  real ( kind = rk ) absc
+  real ( kind = rk ) abserr
+  real ( kind = rk ) b
+  real ( kind = rk ) centr
+  real ( kind = rk ) dhlgth
+  real ( kind = rk ), external :: f
+  real ( kind = rk ) fc
+  real ( kind = rk ) fsum
+  real ( kind = rk ) fval1
+  real ( kind = rk ) fval2
+  real ( kind = rk ) fv1(10)
+  real ( kind = rk ) fv2(10)
+  real ( kind = rk ) hlgth
+  integer ( kind = 4 ) j
+  integer ( kind = 4 ) jtw
+  integer ( kind = 4 ) jtwm1
+  real ( kind = rk ) resabs
+  real ( kind = rk ) resasc
+  real ( kind = rk ) resg
+  real ( kind = rk ) resk
+  real ( kind = rk ) reskh
+  real ( kind = rk ) result
+  real ( kind = rk ) wg(5)
+  real ( kind = rk ) wgk(11)
+  real ( kind = rk ) xgk(11)
+!
+!           the abscissae and weights are given for the interval (-1,1).
+!           because of symmetry only the positive abscissae and their
+!           corresponding weights are given.
+!
+!           xgk    - abscissae of the 21-point Kronrod rule
+!                    xgk(2), xgk(4), ...  abscissae of the 10-point
+!                    Gauss rule
+!                    xgk(1), xgk(3), ...  abscissae which are optimally
+!                    added to the 10-point Gauss rule
+!
+!           wgk    - weights of the 21-point Kronrod rule
+!
+!           wg     - weights of the 10-point Gauss rule
+!
+  data xgk(1),xgk(2),xgk(3),xgk(4),xgk(5),xgk(6),xgk(7),xgk(8), &
+    xgk(9),xgk(10),xgk(11)/ &
+       9.956571630258081E-01,     9.739065285171717E-01, &
+       9.301574913557082E-01,     8.650633666889845E-01, &
+       7.808177265864169E-01,     6.794095682990244E-01, &
+       5.627571346686047E-01,     4.333953941292472E-01, &
+       2.943928627014602E-01,     1.488743389816312E-01, &
+       0.000000000000000E+00/
+!
+  data wgk(1),wgk(2),wgk(3),wgk(4),wgk(5),wgk(6),wgk(7),wgk(8), &
+    wgk(9),wgk(10),wgk(11)/ &
+       1.169463886737187E-02,     3.255816230796473E-02, &
+       5.475589657435200E-02,     7.503967481091995E-02, &
+       9.312545458369761E-02,     1.093871588022976E-01, &
+       1.234919762620659E-01,     1.347092173114733E-01, &
+       1.427759385770601E-01,     1.477391049013385E-01, &
+       1.494455540029169E-01/
+!
+  data wg(1),wg(2),wg(3),wg(4),wg(5)/ &
+       6.667134430868814E-02,     1.494513491505806E-01, &
+       2.190863625159820E-01,     2.692667193099964E-01, &
+       2.955242247147529E-01/
+!
+!
+!           list of major variables
+!
+!           centr  - mid point of the interval
+!           hlgth  - half-length of the interval
+!           absc   - abscissa
+!           fval*  - function value
+!           resg   - result of the 10-point Gauss formula
+!           resk   - result of the 21-point Kronrod formula
+!           reskh  - approximation to the mean value of f over (a,b),
+!                    i.e. to i/(b-a)
+!
+  centr = 5.0E-01*(a+b)
+  hlgth = 5.0E-01*(b-a)
+  dhlgth = abs(hlgth)
+!
+!  Compute the 21-point Kronrod approximation to the
+!  integral, and estimate the absolute error.
+!
+  resg = 0.0E+00
+  fc = f(centr, argsint)
+  resk = wgk(11)*fc
+  resabs = abs(resk)
+  do j = 1, 5
+    jtw = 2*j
+    absc = hlgth*xgk(jtw)
+    fval1 = f(centr-absc, argsint)
+    fval2 = f(centr+absc, argsint)
+    fv1(jtw) = fval1
+    fv2(jtw) = fval2
+    fsum = fval1+fval2
+    resg = resg+wg(j)*fsum
+    resk = resk+wgk(jtw)*fsum
+    resabs = resabs+wgk(jtw)*(abs(fval1)+abs(fval2))
+  end do
+  do j = 1, 5
+    jtwm1 = 2*j-1
+    absc = hlgth*xgk(jtwm1)
+    fval1 = f(centr-absc, argsint)
+    fval2 = f(centr+absc, argsint)
+    fv1(jtwm1) = fval1
+    fv2(jtwm1) = fval2
+    fsum = fval1+fval2
+    resk = resk+wgk(jtwm1)*fsum
+    resabs = resabs+wgk(jtwm1)*(abs(fval1)+abs(fval2))
+  end do
+  reskh = resk*5.0E-01
+  resasc = wgk(11)*abs(fc-reskh)
+  do j = 1, 10
+    resasc = resasc+wgk(j)*(abs(fv1(j)-reskh)+abs(fv2(j)-reskh))
+  end do
+  result = resk*hlgth
+  resabs = resabs*dhlgth
+  resasc = resasc*dhlgth
+  abserr = abs((resk-resg)*hlgth)
+  if ( resasc /= 0.0E+00.and.abserr /= 0.0E+00) then
+    abserr = resasc*min ( 1.0E+00,(2.0E+02*abserr/resasc)**1.5E+00)
+  end if
+  if ( resabs > tiny ( resabs ) /(5.0E+01* epsilon ( resabs ) )) then
+    abserr = max (( epsilon ( resabs ) *5.0E+01)*resabs,abserr)
+  end if
+  return
+end
 !subroutine qk31 ( f, a, b, result, abserr, resabs, resasc )
 
 !!*****************************************************************************80

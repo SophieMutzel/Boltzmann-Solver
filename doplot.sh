@@ -1,5 +1,6 @@
 #!/bin/bash
-gnuplot plot2.gp
-pdflatex plots/boltzmann2.tex
-mv boltzmann2.* plots/
-open -a Preview plots/boltzmann2.pdf
+name=trycon
+gnuplot plot.gp
+pdflatex plots/${name}.tex
+mv ${name}.* plots/
+open -a Preview plots/${name}.pdf

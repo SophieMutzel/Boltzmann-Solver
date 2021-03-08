@@ -1,4 +1,3 @@
-
 module module_params
 
   use mpi
@@ -26,8 +25,8 @@ module module_params
     real(kind=rk)                                :: Mpl = 1.22e19, g = 10.75
 
     ! start, end of simulation
-    real(kind=rk)                                :: z_max = 0.1_rk, z_start = -2.0, dz = 0.000000001_rk, dz_plot=0.2_rk!z_max = 100.0, z_start = 0.01, dz = 0.01
-    integer(kind=ik)                             :: nt = 100
+    real(kind=rk)                                :: z_max = 2.0_rk, z_start = -1.8, dz = 0.000000001_rk, dz_plot=0.1_rk!z_max = 100.0, z_start = 0.01, dz = 0.01
+    integer(kind=ik)                             :: nt = 100000
 
     ! correct relic density?
     real(kind=rk)                                :: DM_low = 1.9e-10, DM_up = 2.2e-10
@@ -36,6 +35,7 @@ module module_params
     real(kind=rk), dimension(3)                  :: initial_values
     character(len=75)                            :: ini_direc="/Users/sophiemutzel 1/Documents/Wolfram Mathematica/Axion_DM/RelicDensity/"
 
+    character(len=80)                            :: file
     ! effective degrees of freedom
     real(kind=rk), dimension(:,:), allocatable   :: heff, geff, heff_HS, geff_HS
 
@@ -59,6 +59,6 @@ end type type_params
 
 contains
     include "allocate_couplings.f90"
-    include "ini_cons_to_params.f90"
+    include "get_params.f90"
 
 end module module_params

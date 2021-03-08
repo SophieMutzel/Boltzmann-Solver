@@ -33,12 +33,12 @@ subroutine region3a_log( N, lz, Y, Ynew, params, argsint )
   H = Hub( T, params )
   ! Y_x
   rhs(1,:) = s/H *params%gaxx**4 * (sv_aaxx*q(2,:)*q(2,:)&
-            - sv_xxaa*q(1,:)*q(1,:))+&
-            params%gaff*params%gaff*params%gaxx*params%gaxx*&
-            gam_xxff/s/H
+            - sv_xxaa*q(1,:)*q(1,:))!+&
+            !params%gaff*params%gaff*params%gaxx*params%gaxx*&
+            !gam_xxff/s/H
   ! Y_a
   rhs(2,:) = params%gaxx**4 * (-sv_aaxx*q(2,:)*q(2,:) &
-            + sv_xxaa*q(1,:)*q(1,:))*s/H &
-            + params%gaff*params%gaff*(gam_agff + gam_afgf)/s/H
+            + sv_xxaa*q(1,:)*q(1,:))*s/H !&
+            !+ params%gaff*params%gaff*(gam_agff + gam_afgf)/s/H
   Ynew = reshape(rhs,(/N/))
 end subroutine region3a_log

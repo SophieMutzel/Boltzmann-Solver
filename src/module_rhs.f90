@@ -14,7 +14,7 @@ module module_rhs
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
 
-        kernel = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma)*&
+        kernel = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma,argsint%g)*&
                 ( s - 4.0_rk* argsint%mx* argsint%mx ) *s *argsint%T * bessK2( sqrt(s)/argsint%T )
         return
     end function kernel
@@ -24,7 +24,7 @@ module module_rhs
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
 
-        kernel2_xxaa = sigma_xxaa(s,argsint%mx,argsint%ma)* &
+        kernel2_xxaa = sigma_xxaa(s,argsint%mx,argsint%ma,argsint%g)* &
                       (s - 4.0_rk* argsint%mx * argsint%mx) * sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel2_xxaa
@@ -34,7 +34,7 @@ module module_rhs
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
 
-        kernel2_xxff = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma)*&
+        kernel2_xxff = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma,argsint%g)*&
                       (s - 4.0_rk* argsint%mx * argsint%mx) * sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel2_xxff
@@ -84,27 +84,40 @@ module module_rhs
       real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr,ma, alphas
       integer(kind=ik)                      :: i, ier, neval, nd
 
-      epsabs = 1e-5_rk
-      epsrel = 1e-5_rk
+      epsabs = 1e-7_rk
+      epsrel = 1e-2_rk
       mx = params%mx
       ma = params%ma
       gam = 0.0_rk
-      nd = size(params%alpha_s,2)
+      !if (sigma=="agff" .or. sigma=="afgf") then
+        nd = size(params%alpha_s,2)
+        call interp_linear(nd, params%alpha_s(1,:),params%alpha_s(2,:),T, alphas)
+      !end if
       argsint%T=T
-      call interp_linear(nd, params%alpha_s(1,:),params%alpha_s(2,:),T, alphas)
 
       select case(sigma)
       case("agff")
         do i=1, 9
           argsint%mf = mf(i)
-          call qagi(kernel_agff,argsint,max(4.0_rk*ma*ma,4.0_rk*mf(i)*mf(i)),&
+          call qagi(kernel_agff,argsint,max(ma*ma,4.0_rk*mf(i)*mf(i)),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            !write(*,*) "Integral did not converge for the first tim ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+            call qags(kernel_agff,argsint,max(ma*ma,4.0_rk*mf(i)*mf(i)),&
+                      1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+          end if
           gam = gam + alpha_QED*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
         do i=4, 9
           argsint%mf = mf(i)
-          call qagi(kernel_agff,argsint,max(1.0_rk,max(4.0_rk*ma*ma,4.0_rk*mf(i)*mf(i))),&
+          call qagi(kernel_agff,argsint,max(1.0_rk,max(ma*ma,4.0_rk*mf(i)*mf(i))),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            call qags(kernel_agff,argsint,max(1.0_rk,max(ma*ma,4.0_rk*mf(i)*mf(i))),&
+                      1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+          end if
           gam = gam + 0.5_rk*alphas*ga*gg*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
       case("afgf")
@@ -112,12 +125,22 @@ module module_rhs
           argsint%mf = mf(i)
           call qagi(kernel_afgf,argsint,(ma+mf(i))*(ma+mf(i)),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            call qags(kernel_afgf,argsint,(ma+mf(i))*(ma+mf(i)),&
+                      1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+          end if
           gam = gam + alpha_QED*qf(i)*qf(i)*ga*gf(i)*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
         do i=4, 9
           argsint%mf = mf(i)
           call qagi(kernel_afgf,argsint,max(1.0_rk,(ma+mf(i))*(ma+mf(i))),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            call qags(kernel_afgf,argsint,max(1.0_rk,(ma+mf(i))*(ma+mf(i))),&
+                      1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+          end if
           gam = gam + 4.0_rk/3.0_rk*alphas*ga*gf(i)*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
       case("xxff")
@@ -126,16 +149,23 @@ module module_rhs
           argsint%nc = ncf(i)
           call qagi(kernel_xxff,argsint,max(4.0_rk*mx*mx,4.0_rk*mf(i)*mf(i)),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            call qags(kernel_xxff,argsint,max(4.0_rk*mx*mx,4.0_rk*mf(i)*mf(i)),&
+                      1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+          end if
           gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
-      case("aaxx")
-        call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-                  1, epsabs, epsrel, result, abserr, neval, ier)
-        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
-      case("xxaa")
-        call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-                  1, epsabs, epsrel, result, abserr, neval, ier)
-        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
+!      case("aaxx")
+!        call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+!                  1, epsabs, epsrel, result, abserr, neval, ier)
+!        if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+!        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
+!      case("xxaa")
+!        call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+!                  1, epsabs, epsrel, result, abserr, neval, ier)
+!        if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+!        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
       case default
         write(*,*) "Error! x section", sigma, "not implemented"
       end select
@@ -149,24 +179,82 @@ module module_rhs
       real(kind=rk), intent(in)             :: T
       character(len=*), intent(in)          :: sigma
       real(kind=rk), intent(out)            :: sv
-      real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr,ma
-      integer(kind=ik)                      :: i, ier, neval
+      real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr,ma,alphas
+      integer(kind=ik)                      :: i, ier, neval, nd
 
-      epsabs = 1e-5_rk
-      epsrel = 1e-5_rk
+      epsabs = 1e-20_rk
+      epsrel = 1e-2_rk
       mx = params%mx
       ma = params%ma
       argsint%T=T
-
+      if (sigma=="agff" .or. sigma=="afgf") then
+        nd = size(params%alpha_s,2)
+        call interp_linear(nd, params%alpha_s(1,:),params%alpha_s(2,:),T, alphas)
+      end if
       select case(sigma)
-      case("aaxx")
+        case("aaxx")
           call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
                 1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            call qags(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+          end if
           sv = result/4.0_rk/(2.0_rk*T*ma*ma*ma*ma*bessK2(ma/T)* bessK2(ma/T))
         case("xxaa")
           call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
                 1, epsabs, epsrel, result, abserr, neval, ier)
+          if (ier > 0) then
+            call qags(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+          end if
           sv = result/4.0_rk/(2.0_rk*T*mx*mx*mx*mx* bessK2(mx/T)* bessK2(mx/T))
+!        case("agff")
+!          sv = 0.0_rk
+!          do i=1, 9
+!            argsint%mf = mf(i)
+!            call qagi(kernel_agff,argsint,max(ma*ma,4.0_rk*mf(i)*mf(i)),&
+!                1, epsabs, epsrel, result, abserr, neval, ier)
+!            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+!            sv = sv + alpha_QED*qf(i)*qf(i)*result*1e10_rk/4.0_rk/(2.0_rk*T*ma*ma* bessK2(ma/T)*T*T*T)!????
+!          end do
+!          do i=4, 9
+!            argsint%mf = mf(i)
+!            call qagi(kernel_agff,argsint,max(1.0_rk,max(ma*ma,4.0_rk*mf(i)*mf(i))),&
+!                1, epsabs, epsrel, result, abserr, neval, ier)
+!            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+!            sv = sv + 0.5_rk*alphas*result*1e10_rk/4.0_rk/(2.0_rk*T*ma*ma* bessK2(ma/T)*T*T*T)!????
+!          end do
+!        case("afgf")
+!          sv = 0.0_rk
+!          do i=1, 9
+!            argsint%mf = mf(i)
+!            call qagi(kernel_afgf,argsint,(ma+mf(i))*(ma+mf(i)),&
+!                1, epsabs, epsrel, result, abserr, neval, ier)
+!            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+!            sv = sv + alpha_QED*qf(i)*qf(i)*result/4.0_rk/&
+!                (2.0_rk*T*ma*ma* bessK2(ma/T)*mf(i)*mf(i)* bessK2(mf(i)/T))
+!          end do
+!          do i=4, 9
+!            argsint%mf = mf(i)
+!            call qagi(kernel_afgf,argsint,max(1.0_rk,(ma+mf(i))*(ma+mf(i))),&
+!                1, epsabs, epsrel, result, abserr, neval, ier)
+!            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+!            sv = sv +  4.0_rk/3.0_rk*alphas*result/4.0_rk/(2.0_rk*T*ma*ma* &
+!                bessK2(ma/T)*mf(i)*mf(i)* bessK2(mf(i)/T))
+!          end do
+!        case("xxff")
+!          sv = 0.0_rk
+!          do i=1,9
+!            argsint%mf = mf(i)
+!            argsint%nc = ncf(i)
+!            call qagi(kernel_xxff,argsint,max(4.0_rk*mx*mx,4.0_rk*mf(i)*mf(i)),&
+!                      1, epsabs, epsrel, result, abserr, neval, ier)
+!            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
+!            sv = sv + result/4.0_rk/(2.0_rk*T*mx*mx*mf(i)*mf(i)* &
+!                      bessK2(mx/T)* bessK2(mf(i)/T))
+!          end do
         case default
           write(*,*) "Error! x section", sigma, "not implemented"
       end select
@@ -176,16 +264,24 @@ module module_rhs
       implicit none
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
-        kernel_agff = sigma_agff(s,argsint%mf,argsint%ma)*4.0_rk*&
+        kernel_agff = sigma_agff(s,argsint%mf,argsint%ma,argsint%g)*4.0_rk*&
                       F(s,argsint%ma,0.0_rk)*F(s,argsint%ma,0.0_rk)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel_agff
+    real(kind=rk) function kernel_ffag( s, argsint )
+      implicit none
+        real(kind=rk), intent(in)           :: s
+        type (type_argsint), intent(in)     :: argsint
+        kernel_ffag = sigma_ffag(s,argsint%mf,argsint%ma,argsint%g)*4.0_rk*&
+                      F(s,argsint%mf,argsint%mf)*F(s,argsint%mf,argsint%mf)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+        return
+    end function kernel_ffag
     real(kind=rk) function kernel_xxff( s, argsint )
       implicit none
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
 
-        kernel_xxff = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma)*4.0_rk*&
+        kernel_xxff = sigma_xxff(s,argsint%mf,argsint%nc,argsint%mx,argsint%ma,argsint%g)*4.0_rk*&
                       F(s,argsint%mx,argsint%mx)*F(s,argsint%mx,argsint%mx)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel_xxff
@@ -193,7 +289,7 @@ module module_rhs
       implicit none
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
-        kernel_afgf = sigma_afgf(s,argsint%mf,argsint%ma)*4.0_rk*&
+        kernel_afgf = sigma_afgf(s,argsint%mf,argsint%ma,argsint%g)*4.0_rk*&
                       F(s,argsint%ma,argsint%mf)*F(s,argsint%ma,argsint%mf)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel_afgf
@@ -201,7 +297,7 @@ module module_rhs
       implicit none
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
-        kernel_aaxx = sigma_aaxx(s,argsint%mx,argsint%ma)*4.0_rk*&
+        kernel_aaxx = sigma_aaxx(s,argsint%mx,argsint%ma,argsint%g)*4.0_rk*&
                       F(s,argsint%ma,argsint%ma)*F(s,argsint%ma,argsint%ma)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
         return
     end function kernel_aaxx
@@ -211,7 +307,7 @@ module module_rhs
         real(kind=rk), intent(in)           :: s
         type (type_argsint), intent(in)     :: argsint
 
-        kernel_xxaa = sigma_xxaa(s,argsint%mx,argsint%ma)*4.0_rk*&
+        kernel_xxaa = sigma_xxaa(s,argsint%mx,argsint%ma,argsint%g)*4.0_rk*&
                       F(s,argsint%mx,argsint%mx)*F(s,argsint%mx,argsint%mx)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
 
     end function kernel_xxaa

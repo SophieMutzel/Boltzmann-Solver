@@ -5,7 +5,7 @@ module module_utils
 
   implicit none
   type, public :: type_argsint
-    real(kind=rk)                     :: T, mf, nc, mx, ma
+    real(kind=rk)                     :: T, mf, nc, mx, ma, g
   end type type_argsint
 
   contains
@@ -166,14 +166,103 @@ module module_utils
       return
     end function float2str
 
-    character(len=10) function exp2str(float)
+    character(len=7) function exp2str(float)
       implicit none
       real(kind=rk), intent(in)  :: float
 
-      write(exp2str,'(E7.0)') float
+      write(exp2str,'(E7.2)') float
       return
     end function exp2str
 
+    #define MAXIT 30 Maximum allowed number of iterations.
+    float rtsec(float (*func)(float), float x1, float x2, float xacc)
+    !Using the secant method, find the root of a function func thought to lie between x1 and x2. The root, returned as rtsec, is refined until its accuracy is ±xacc.
+    {
+    void nrerror(char error_text[]); int j;
+    float fl,f,dx,swap,xl,rts;
+    fl=(*func)(x1); f=(*func)(x2);
+    if (fabs(fl) < fabs(f)) {
+        rts=x1;
+        xl=x2;
+        swap=fl;
+        fl=f;
+        f=swap;
+    } else {
+        xl=x1;
+    rts=x2; }
+    for (j=1;j<=MAXIT;j++) { dx=(xl-rts)*f/(f-fl); xl=rts;
+    fl=f;
+    !Pick the bound with the smaller function value as the most recent guess.
+    !Secant loop.
+    !Increment with respect to latest value.
+    rts += dx;
+    f=(*func)(rts);
+    if (fabs(dx) < xacc || f == 0.0) return rts;
+    !Convergence.
+    }
+    nrerror("Maximum number of iterations exceeded in rtsec"); return 0.0; !Never get here.
+    }
+
+!BISECTION
+    #include <math.h>
+#define JMAX 40 Maximum allowed number of bisections.
+float rtbis(float (*func)(float), float x1, float x2, float xacc)
+Using bisection, find the root of a function func known to lie between x1 and x2. The root, returned as rtbis, will be refined until its accuracy is ±xacc.
+{
+void nrerror(char error_text[]); int j;
+float dx,f,fmid,xmid,rtb;
+f=(*func)(x1);
+fmid=(*func)(x2);
+if (f*fmid >= 0.0) nrerror("Root must be bracketed for bisection in rtbis");
+ }
+rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2); for (j=1;j<=JMAX;j++) {
+fmid=(*func)(xmid=rtb+(dx *= 0.5));
+if (fmid <= 0.0) rtb=xmid;
+if (fabs(dx) < xacc || fmid == 0.0) return rtb;
+}
+nrerror("Too many bisections in rtbis"); return 0.0;
+    subroutine find_root( f, xinit, tol, maxiter, result, success )
+
+        real, external       :: f
+        real, intent(in)     :: xinit
+        real, intent(in)     :: tol
+        integer, intent(in)  :: maxiter
+        real, intent(out)    :: result
+        logical, intent(out) :: success
+
+        real                 :: eps = 1.0e-4
+        real                 :: fx1
+        real                 :: fx2
+        real                 :: fprime
+        real                 :: x
+        real                 :: xnew
+        integer              :: i
+
+        result  = 0.0
+        success = .false.
+
+        x = xinit
+        do i = 1,max(1,maxiter)
+            fx1    = f(x)
+            fx2    = f(x+eps)
+            write(*,*) i, fx1, fx2, eps
+            fprime = (fx2 - fx1) / eps
+
+            xnew   = x - fx1 / fprime
+
+            if ( abs(xnew-x) <= tol ) then
+                success = .true.
+                result  = xnew
+                exit
+            endif
+
+            x = xnew
+            write(*,*) i, x
+         enddo
+
+    end subroutine find_root
+
     include "quadpack.f90"
     include "interpolation.f90"
+    include "intlib.f90"
 end module

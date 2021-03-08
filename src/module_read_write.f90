@@ -130,4 +130,6 @@ module module_read_write
       close(99)
     end subroutine write_matrix
 
+    include "write_gnuplot.f90"
+    include "write_gnuplot_rhs.f90"
 end module

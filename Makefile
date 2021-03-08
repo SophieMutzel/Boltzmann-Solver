@@ -6,8 +6,8 @@ OBJDIR = OBJ
 OBJS := $(FFILES:%.f90=$(OBJDIR)/%.o)
 
 # Files that create modules:
-MFILES = module_precision.f90 module_params.f90 module_read_write.f90 module_utils.f90 \
-				module_cosmo.f90 module_xsecs.f90 module_rhs.f90 dvode.f90
+MFILES = module_precision.f90 f90getopt.f90 module_params.f90 module_read_write.f90 module_utils.f90 \
+				module_cosmo.f90 module_xsecs.f90 module_rhs.f90 dvode.f90 module_dof.f90
 MOBJS := $(MFILES:%.f90=$(OBJDIR)/%.o)
 
 # Source code directories (colon-separated):
@@ -57,18 +57,22 @@ boltzmann: main.f90 $(MOBJS) $(OBJS)
 $(OBJDIR)/module_precision.o: module_precision.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
-$(OBJDIR)/module_read_write.o: module_read_write.f90 $(OBJDIR)/module_precision.o
+$(OBJDIR)/f90getopt.o: f90getopt.f90
+		$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
+
+$(OBJDIR)/module_read_write.o: module_read_write.f90 $(OBJDIR)/module_precision.o \
+	write_gnuplot.f90 write_gnuplot_rhs.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_utils.o: module_utils.f90 $(OBJDIR)/module_precision.o \
-	quadpack.f90 interpolation.f90
+	quadpack.f90 interpolation.f90 intlib.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_params.o: module_params.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_read_write.o $(OBJDIR)/module_utils.o \
-	ini_cons_to_params.f90 allocate_couplings.f90
+ 	allocate_couplings.f90 get_params.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
-$(OBJDIR)/module_cosmo.o: module_cosmo.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o \
+$(OBJDIR)/module_cosmo.o: module_cosmo.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o $(OBJDIR)/module_dof.o \
 	initial_conditions.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
@@ -81,6 +85,10 @@ $(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/mo
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/dvode.o: dvode.f90  $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o
+
+$(OBJDIR)/module_dof.o: module_dof.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o \
+	ini_cons_to_params.f90
+	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 # Compile remaining objects from Fortran files.
 $(OBJDIR)/%.o: %.f90 $(MOBJS)
