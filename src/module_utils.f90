@@ -173,96 +173,160 @@ module module_utils
       write(exp2str,'(E7.2)') float
       return
     end function exp2str
+    function inv(A) result(Ainv)
+      real(kind=rk), dimension(:,:), intent(in) :: A
+      real(kind=rk), dimension(size(A,1),size(A,2)) :: Ainv
 
-    #define MAXIT 30 Maximum allowed number of iterations.
-    float rtsec(float (*func)(float), float x1, float x2, float xacc)
-    !Using the secant method, find the root of a function func thought to lie between x1 and x2. The root, returned as rtsec, is refined until its accuracy is ±xacc.
-    {
-    void nrerror(char error_text[]); int j;
-    float fl,f,dx,swap,xl,rts;
-    fl=(*func)(x1); f=(*func)(x2);
-    if (fabs(fl) < fabs(f)) {
-        rts=x1;
-        xl=x2;
-        swap=fl;
-        fl=f;
-        f=swap;
-    } else {
-        xl=x1;
-    rts=x2; }
-    for (j=1;j<=MAXIT;j++) { dx=(xl-rts)*f/(f-fl); xl=rts;
-    fl=f;
-    !Pick the bound with the smaller function value as the most recent guess.
-    !Secant loop.
-    !Increment with respect to latest value.
-    rts += dx;
-    f=(*func)(rts);
-    if (fabs(dx) < xacc || f == 0.0) return rts;
-    !Convergence.
-    }
-    nrerror("Maximum number of iterations exceeded in rtsec"); return 0.0; !Never get here.
-    }
+      real(kind=rk), dimension(size(A,1)) :: work  ! work array for LAPACK
+      integer, dimension(size(A,1)) :: ipiv   ! pivot indices
+      integer :: n, info
 
-!BISECTION
-    #include <math.h>
-#define JMAX 40 Maximum allowed number of bisections.
-float rtbis(float (*func)(float), float x1, float x2, float xacc)
-Using bisection, find the root of a function func known to lie between x1 and x2. The root, returned as rtbis, will be refined until its accuracy is ±xacc.
-{
-void nrerror(char error_text[]); int j;
-float dx,f,fmid,xmid,rtb;
-f=(*func)(x1);
-fmid=(*func)(x2);
-if (f*fmid >= 0.0) nrerror("Root must be bracketed for bisection in rtbis");
- }
-rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2); for (j=1;j<=JMAX;j++) {
-fmid=(*func)(xmid=rtb+(dx *= 0.5));
-if (fmid <= 0.0) rtb=xmid;
-if (fabs(dx) < xacc || fmid == 0.0) return rtb;
-}
-nrerror("Too many bisections in rtbis"); return 0.0;
-    subroutine find_root( f, xinit, tol, maxiter, result, success )
+      ! External procedures defined in LAPACK
+      external DGETRF
+      external DGETRI
 
-        real, external       :: f
-        real, intent(in)     :: xinit
-        real, intent(in)     :: tol
-        integer, intent(in)  :: maxiter
-        real, intent(out)    :: result
-        logical, intent(out) :: success
+      ! Store A in Ainv to prevent it from being overwritten by LAPACK
+      Ainv = A
+      n = size(A,1)
 
-        real                 :: eps = 1.0e-4
-        real                 :: fx1
-        real                 :: fx2
-        real                 :: fprime
-        real                 :: x
-        real                 :: xnew
-        integer              :: i
+      ! DGETRF computes an LU factorization of a general M-by-N matrix A
+      ! using partial pivoting with row interchanges.
+      call DGETRF(n, n, Ainv, n, ipiv, info)
 
-        result  = 0.0
-        success = .false.
+      if (info /= 0) then
+         stop 'Matrix is numerically singular!'
+      end if
 
-        x = xinit
-        do i = 1,max(1,maxiter)
-            fx1    = f(x)
-            fx2    = f(x+eps)
-            write(*,*) i, fx1, fx2, eps
-            fprime = (fx2 - fx1) / eps
+      ! DGETRI computes the inverse of a matrix using the LU factorization
+      ! computed by DGETRF.
+      call DGETRI(n, Ainv, n, ipiv, work, n, info)
 
-            xnew   = x - fx1 / fprime
+      if (info /= 0) then
+         stop 'Matrix inversion failed!'
+      end if
+    end function inv
+    subroutine get_bezier_coeff(points, n, A, B)
+      implicit none
+      real(kind=rk), intent(in)     :: points(n+1,2)
+      integer(kind=ik), intent(in)  :: n
+      real(kind=rk), intent(out)    :: A(n,2), B(n,2)
+      real(kind=rk), dimension(n,n) :: C
+      real(kind=rk), dimension(n,2) :: P
+      integer(kind=ik)              :: i
 
-            if ( abs(xnew-x) <= tol ) then
-                success = .true.
-                result  = xnew
-                exit
-            endif
+      !n = len(points) - 1
+      C=0.0_rk
+      C(1,1) = 2.0_rk
+      do i=2,n
+        C(i,i) = 4.0_rk
+        C(i-1,i) = 1.0_rk
+        C(i,i-1) = 1.0_rk
+      end do
+      C(n,n) = 7.0_rk
+      C(n,n-1) = 2.0_rk
+      do i = 1, n
+        P(i,:) = 2.0_rk * ( 2.0_rk * points(i,:) + points(i+1,:) )
+      end do
+      P(1,:) = points(1,:) + 2.0_rk * points(2,:)
+      P(n,:) = 8.0_rk * points(n,:) + points(n+1,:)
 
-            x = xnew
-            write(*,*) i, x
-         enddo
+      A(:,1) = matmul(inv(C),P(:,1))
+      A(:,2) = matmul(inv(C),P(:,2))
+      do i = 1, n-1
+        B(i,:) = 2.0_rk * points(i+1,:) - A(i+1,:)
+      end do
+      B(n,:) = (A(n,:) + points(n+1,:))/2.0_rk
 
-    end subroutine find_root
+    end subroutine get_bezier_coeff
+
+    subroutine get_cubic(a,b,c,d,t,curve)
+      !returns the general Bezier cubic formula given 4 control points
+      implicit none
+      real(kind=rk), intent(in), dimension(2)   :: a,b,c,d
+      real(kind=rk), intent(in)                 :: t
+      real(kind=rk), intent(out),dimension(2)   :: curve(2)
+      curve(:) = (1.0_rk-t)**3 * a + 3.0_rk * (1.0_rk-t)**2 * t * b &
+                  + 3.0_rk*(1.0_rk-t)*t*t*c + t*t*t*d
+    end subroutine get_cubic
+
+    ! return one cubic curve for each consecutive points
+!    subroutine get_bezier_cubic(points, n, bezier)
+!      implicit none
+!      real(kind=rk), intent(in)     :: points(n+1,2)
+!      integer(kind=ik), intent(in)  :: n
+!      real(kind=rk), intent(out)    :: bezier(n,2)
+!      real(kind=rk)                 :: A(n,2), B(n,2)
+!      integer(kind=ik)              :: i
+!
+!      call get_bezier_coeff(points,n,A,B)
+!      do i=1,n
+!        call get_cubic(points(i,:),A(i,:),B(i,:),points(i+1,:),t,bezier(i,:))
+!      end do
+!
+!    end subroutine get_bezier_cubic
+    subroutine test_bezier(x,y,x_eval,y_eval,n,A,B)
+      implicit none
+      real(kind=rk), intent(in)     :: x(:),y(:),x_eval,A(:,:),B(:,:)
+      real(kind=rk), intent(out)    :: y_eval
+      integer(kind=ik), intent(in)  :: n
+      real(kind=rk)                 :: xmin,ymin,xmax,ymax
+      integer(kind=4)              :: l, j, i
+      real(kind=rk)                 :: tvals
+      real(kind=rk)                 :: points(n+1,2), bezier(2)!,A(n,2), B(n,2)
+
+      xmin = minval(x)
+      xmax = maxval(x)
+      ymin = minval(y)
+      ymax = maxval(y)
+      points(:,1)=(x-xmin)/(xmax-xmin)
+      points(:,2)=(y-ymin)/(ymax-ymin)
+      !call linspace(0.0_rk,1.0_rk,tvals)
+      !call get_bezier_coeff(points,n,A,B)
+      call r8vec_bracket ( n+1, x, x_eval, i, j )
+      tvals = (x_eval-x(i))/(x(i+1)-x(i))
+      !l=1
+          call get_cubic(points(i,:),A(i,:),B(i,:),points(i+1,:),tvals,bezier(:))
+          !l = l+1
+        !end do
+      !end do
+      !x_eval = bezier(1)*(xmax-xmin)+xmin
+      y_eval = bezier(2)*(ymax-ymin)+ymin
+
+    end subroutine test_bezier
+
+!    subroutine test_bezier(x,y,x_eval,y_eval,n,nvals)
+!      implicit none
+!      real(kind=rk), intent(in)     :: x(:),y(:)
+!      real(kind=rk), intent(out)    :: x_eval(:),y_eval(:)
+!      integer(kind=ik), intent(in)  :: n,nvals
+!      real(kind=rk)                 :: xmin,ymin,xmax,ymax
+!      integer(kind=rk)              :: l, j, i
+!      real(kind=rk)                 :: tvals(nvals)
+!      real(kind=rk)                 :: A(n,2), B(n,2), points(n+1,2), bezier(n*nvals,2)
+!
+!      xmin = minval(x)
+!      xmax = maxval(x)
+!      ymin = minval(y)
+!      ymax = maxval(y)
+!      points(:,1)=(x-xmin)/(xmax-xmin)
+!      points(:,2)=(y-ymin)/(ymax-ymin)
+!      call linspace(0.0_rk,1.0_rk,tvals)
+!      call get_bezier_coeff(points,n,A,B)
+!      call r8vec_bracket ( n, x, t, left, right )
+!      l=1
+!      do i=1,n
+!        do j=1,nvals
+!          call get_cubic(points(i,:),A(i,:),B(i,:),points(i+1,:),tvals(j),bezier(l,:))
+!          l = l+1
+!        end do
+!      end do
+!      x_eval(:) = bezier(:,1)*(xmax-xmin)+xmin
+!      y_eval(:) = bezier(:,2)*(ymax-ymin)+ymin
+!
+!    end subroutine test_bezier
 
     include "quadpack.f90"
+    include "spline.f90"
     include "interpolation.f90"
-    include "intlib.f90"
+
 end module

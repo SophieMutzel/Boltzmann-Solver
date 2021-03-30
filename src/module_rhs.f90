@@ -39,40 +39,40 @@ module module_rhs
         return
     end function kernel2_xxff
 
-    subroutine gamma_r( T, params, argsint, con, gam )
-      implicit none
-      type (type_params), intent(in)        :: params
-      type (type_argsint), intent(inout)    :: argsint
-      real(kind=rk), intent(in)             :: T
-      logical, intent(in)                   :: con
-      real(kind=rk), intent(out)            :: gam
-      real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr
-      integer(kind=ik)                      :: i, ier, neval
-
-      epsabs = 1e-5_rk
-      epsrel = 1e-5_rk
-      gam    = 0.0_rk
-      argsint%T = T
-      mx = params%mx
-
-      if ( con ) then
-        do i=1, size(mf)
-          argsint%mf = mf(i)
-          argsint%nc = ncf(i)
-          call qagi( kernel2_xxff, argsint, 4.0_rk*max(mx*mx,mf(i)*mf(i)), &
-                    1, epsabs, epsrel, result, abserr, neval, ier )
-          gam = gam + T/2.0_rk/pi**4 * result
-        end do
-      else
-        !argsint%mf = params%ma
-        argsint%nc = 1.0_rk
-        !!!!!!!!!!!!!!!! check this!!!!!!!
-        call qagi( kernel2_xxaa, argsint, 4.0_rk*max(mx*mx,params%ma*params%ma), &
-                  1, epsabs, epsrel, result, abserr, neval, ier )
-        gam = T/2.0_rk/pi**4 * result
-      end if
-      return
-    end subroutine gamma_r
+!    subroutine gamma_r( T, params, argsint, con, gam )
+!      implicit none
+!      type (type_params), intent(in)        :: params
+!      type (type_argsint), intent(inout)    :: argsint
+!      real(kind=rk), intent(in)             :: T
+!      logical, intent(in)                   :: con
+!      real(kind=rk), intent(out)            :: gam
+!      real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr
+!      integer(kind=ik)                      :: i, ier, neval
+!
+!      epsabs = 1e-5_rk
+!      epsrel = 1e-5_rk
+!      gam    = 0.0_rk
+!      argsint%T = T
+!      mx = params%mx
+!
+!      if ( con ) then
+!        do i=1, size(mf)
+!          argsint%mf = mf(i)
+!          argsint%nc = ncf(i)
+!          call qagi( kernel2_xxff, argsint, 4.0_rk*max(mx*mx,mf(i)*mf(i)), &
+!                    1, epsabs, epsrel, result, abserr, neval, ier )
+!          gam = gam + T/2.0_rk/pi**4 * result
+!        end do
+!      else
+!        !argsint%mf = params%ma
+!        argsint%nc = 1.0_rk
+!        !!!!!!!!!!!!!!!! check this!!!!!!!
+!        call qagi( kernel2_xxaa, argsint, 4.0_rk*max(mx*mx,params%ma*params%ma), &
+!                  1, epsabs, epsrel, result, abserr, neval, ier )
+!        gam = T/2.0_rk/pi**4 * result
+!      end if
+!      return
+!    end subroutine gamma_r
 
     subroutine gamma_r_new( T, params, argsint, sigma, gam )
       implicit none
@@ -183,7 +183,7 @@ module module_rhs
       integer(kind=ik)                      :: i, ier, neval, nd
 
       epsabs = 1e-20_rk
-      epsrel = 1e-2_rk
+      epsrel = 1e-5_rk
       mx = params%mx
       ma = params%ma
       argsint%T=T
@@ -320,9 +320,9 @@ module module_rhs
     end function F
 
 
-    include "rhs_boltzmann.f90"
-    include "rhs_region3a2.f90"
-    include "region3a_log.f90"
+    !include "rhs_boltzmann.f90"
+    !include "rhs_region3a2.f90"
+    !include "region3a_log.f90"
     include "rhs_contributions.f90"
     include "region3aeq.f90"
     include "RK4.f90"

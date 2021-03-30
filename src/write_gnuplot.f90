@@ -1,7 +1,8 @@
-subroutine write_gnuplot(unit_number, filename)
+subroutine write_gnuplot(unit_number, filename, Yobs)
   implicit none
   character(len=*), intent(in)      :: filename
   integer(kind=ik), intent(in)      :: unit_number
+  real(kind=rk), intent(in)         :: Yobs
   integer(kind=ik)                  :: io_error
 
   open (unit=unit_number, file=filename//".gp", status='replace', action='write', iostat=io_error)
@@ -24,7 +25,7 @@ subroutine write_gnuplot(unit_number, filename)
     write(unit_number,*) "'", filename, ".txt' using 1:5  with lines ls   1  title '$Y_{\chi,eq}(T^\prime)$' , \"
     write(unit_number,*) "'", filename, ".txt' using 1:6  with lines ls   2  title '$Y_{a,eq}(T^\prime)$' , \"
     write(unit_number,*) "'", filename, ".txt' using 1:7  with lines ls   6 title '$z^\prime$' , \"
-    write(unit_number,*) "8.18e-12   ls 7 title 'observed relic density'"
+    write(unit_number,*) Yobs, "   ls 7 title 'observed relic density'"
   else
     write(*,*) 'error', io_error,' while opening the file ', filename
   end if

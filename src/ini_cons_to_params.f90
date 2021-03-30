@@ -4,35 +4,43 @@ subroutine ini_cons_to_params( params, argsint )
   ! user defined parameter structure
   type (type_params), intent(inout)            :: params
   type (type_argsint), intent(inout)           :: argsint
-  real(kind=rk), dimension(:,:), allocatable   :: geff_heff
+  real(kind=rk), dimension(:,:), allocatable   :: geff_heff, points
   character(len=16)                            :: stmx, stma
-  integer(kind=ik)                             :: n, i
+  integer(kind=ik)                             :: n, i, nc
+  real(kind=rk)                                :: xmin,xmax,ymin,ymax
 
   write(stmx,'(F12.4)') params%mx
   write(stma,'(F12.4)') params%ma
 
-  !call read_vec(trim(params%ini_direc)//'initial_valuesz01_255.dat', params%initial_values, nrhs)
-  !call read_dbl_from_file(trim(params%ini_direc)//'initial_values_Z01_'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%init_Y)
-  call read_matrix_from_file(trim(params%ini_direc)//'geff_heff.txt', geff_heff, 3, .true.)
-  !call read_matrix_from_file(trim(params%ini_direc)//'heffHS'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%heff_HS, 2, .false.)
-  !call read_matrix_from_file(trim(params%ini_direc)//'geffHS'//trim(adjustl(stmx))//trim(adjustl(stma))//'.dat', params%geff_HS, 2, .false.)
+  !call read_matrix_from_file(trim(params%ini_direc)//'geff_heff.txt', geff_heff, 3, .true.)
+!  call read_matrix_from_file(trim(params%ini_direc)//'geff_heff_new.txt', geff_heff, 5, .true.)
+!
+!  n = size(geff_heff,2)
+!  allocate(params%heff(2,n))
+!  allocate(params%geff(2,n))
+!  params%geff(1,:) = geff_heff(1,:)
+!  params%heff(1,:) = geff_heff(1,:)
+!
+!  params%geff(2,:) = geff_heff(2,:)!+geff_heff(3,:)
+!  params%heff(2,:) = geff_heff(4,:)!+geff_heff(5,:)
 
-  n = size(geff_heff,2)
-  allocate(params%heff(2,n))
-  allocate(params%geff(2,n))
-  do i=1,n
-    params%heff(1,i)    = geff_heff(1,n+1-i)
-    params%heff(2,i)    = geff_heff(3,n+1-i)
-    params%geff(1,i)    = geff_heff(1,n+1-i)
-    params%geff(2,i)    = geff_heff(2,n+1-i)
-  end do
-
-  allocate(params%geff_HS(2,50),params%heff_HS(2,50))
+  allocate(params%geff_HS(2,100),params%heff_HS(2,100))!,params%B(500))!,params%C(500),params%D(500))
   call heffHS(params, argsint, params%heff_HS)
   ! have to call heffHS first!
   call geffHS(params, argsint, params%geff_HS)
-  !params%heff_HS(1,:) = 10**params%heff_HS(1,:)
-  !params%geff_HS(1,:) = 10**params%geff_HS(1,:)
+
+  ! for bezier fit to geff
+!  nc = size(params%geff(1,:))
+!  n = size(params%geff(1,1:nc:3))
+!  allocate(params%A(n-1,2),params%B(n-1,2),points(n,2))
+!  xmin = minval(params%geff(1,1:nc:3))
+!  xmax = maxval(params%geff(1,1:nc:3))
+!  ymin = minval(params%geff(2,1:nc:3))
+!  ymax = maxval(params%geff(2,1:nc:3))
+!  points(:,1) = (params%geff(1,1:nc:3)-xmin)/(xmax-xmin)
+!  points(:,2) = (params%geff(2,1:nc:3)-ymin)/(ymax-ymin)
+!  call get_bezier_coeff(points,n-1,params%A,params%B)
+!  deallocate(points)
 
  ! loop factor (sum_f mf^2 ncf qf^2 C0(0,0,ma^2,mf^2, mf^2,mf^2))^2
 !  select case (params%ma)

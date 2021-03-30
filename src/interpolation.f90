@@ -213,6 +213,7 @@ function r8vec_ascends_strictly ( n, x )
 
   do i = 1, n - 1
     if ( x(i+1) <= x(i) ) then
+      write(*,*) x(i+1), x(i)
       r8vec_ascends_strictly = .false.
       return
     end if

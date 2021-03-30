@@ -13,6 +13,8 @@ module module_precision
   real(kind=rk), dimension(9)        :: qf = (/ 1., 1., 1., -1./3.,-1./3.,-1./3.,2./3.,2./3.,2./3. /)
   real(kind=rk), parameter, public   :: T_RH=1e5_rk
   real(kind=rk), parameter, public   :: alpha_QED = 1.0_rk/137.0_rk
+  real(kind=rk), parameter, public   :: Mpl = 1.22e19_rk
+  real(kind=rk), parameter, public   :: Yxmxobs = 2.045e-10_rk
 
   ! number of rhs
   integer(kind=ik), parameter, public :: nrhs = 2
@@ -25,4 +27,15 @@ module module_precision
 
      BOLTZMANN_COMM=comm
  end subroutine set_mpi_comm_global
+
+ subroutine abort_it(msg)
+  implicit none
+  character(len=*), intent(in) :: msg
+  integer(kind=ik) :: mpierr
+
+  write(*,*) msg
+  !call abort
+  call MPI_ABORT( BOLTZMANN_COMM, 666, mpierr)
+end subroutine abort_it
+
 end module

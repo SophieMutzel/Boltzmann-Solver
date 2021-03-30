@@ -21,9 +21,6 @@ module module_params
     real(kind=rk), dimension(:), allocatable     :: gaff, gaxx
     real(kind=rk), dimension(2)                  :: kappa_range = (/ -13.5, -13.5 /), gaxx_range = (/ -2.18251, -2.18251 /)
 
-    ! constants
-    real(kind=rk)                                :: Mpl = 1.22e19, g = 10.75
-
     ! start, end of simulation
     real(kind=rk)                                :: z_max = 2.0_rk, z_start = -1.8, dz = 0.000000001_rk, dz_plot=0.1_rk!z_max = 100.0, z_start = 0.01, dz = 0.01
     integer(kind=ik)                             :: nt = 100000
@@ -37,7 +34,7 @@ module module_params
 
     character(len=80)                            :: file
     ! effective degrees of freedom
-    real(kind=rk), dimension(:,:), allocatable   :: heff, geff, heff_HS, geff_HS
+    real(kind=rk), dimension(:,:), allocatable   :: heff, geff, heff_HS, geff_HS, A,B
 
     ! in Mathematica calculated rhs for rhoa/rho
     real(kind=rk), dimension(:,:), allocatable   :: drhoa_rho

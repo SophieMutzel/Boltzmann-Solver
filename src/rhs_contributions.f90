@@ -18,7 +18,7 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
   mx = params%mx
   T = mx/10**lz
   argsint%T = T
-  Tprim(:) = sqrt(params%gaff) * Ta(T,params)
+  Tprim(:) = Ta(T,params)!sqrt(params%gaff) * Ta(T,params)
   ! HS interaction
   do i=1,params%N
     ! DM axion interaction
@@ -35,14 +35,14 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
   end do
   ! Y_x
   do i=1,params%N
-    neqzp(i) = neq(sqrt(params%gaff(i))*Ta(T,params), params%mx, gDM)
-    neqazp(i) = neq(sqrt(params%gaff(i))*Ta(T,params), params%ma, ga)
+    neqzp(i) = neq(Tprim(i), params%mx, gDM)!neq(sqrt(params%gaff(i))*Ta(T,params), params%mx, gDM)
+    neqazp(i) = neq(Tprim(i), params%ma, ga)!neq(sqrt(params%gaff(i))*Ta(T,params), params%ma, ga)
   end do
   s = ent( T, params )
   H = Hub( T, params )
 
   rhs(1,:) = lz
-  rhs(2,:) = sqrt(params%gaff)*Ta(T,params)
+  rhs(2,:) = Ta(T,params)!sqrt(params%gaff)*Ta(T,params)
   rhs(3,:) = s/H * sv_aaxx * q(2,:) * q(2,:)
   rhs(4,:) = s/H * sv_xxaa * q(1,:) * q(1,:)
   rhs(5,:) = (gam_agff + gam_afgf)/s/H

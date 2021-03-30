@@ -65,7 +65,7 @@ $(OBJDIR)/module_read_write.o: module_read_write.f90 $(OBJDIR)/module_precision.
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_utils.o: module_utils.f90 $(OBJDIR)/module_precision.o \
-	quadpack.f90 interpolation.f90 intlib.f90
+	quadpack.f90 interpolation.f90 spline.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_params.o: module_params.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_read_write.o $(OBJDIR)/module_utils.o \
@@ -81,13 +81,13 @@ $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR
 
 $(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
 	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o \
-	rhs_boltzmann.f90 RK4.f90 rhs_region3a2.f90 region3a_log.f90 rhs_contributions.f90 region3aeq.f90
+	RK4.f90 rhs_contributions.f90 region3aeq.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/dvode.o: dvode.f90  $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o
 
 $(OBJDIR)/module_dof.o: module_dof.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o \
-	ini_cons_to_params.f90
+	ini_cons_to_params.f90 geff_new.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 # Compile remaining objects from Fortran files.
