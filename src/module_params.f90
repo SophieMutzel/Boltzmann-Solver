@@ -37,7 +37,7 @@ module module_params
     real(kind=rk), dimension(:,:), allocatable   :: heff, geff, heff_HS, geff_HS, A,B
 
     ! in Mathematica calculated rhs for rhoa/rho
-    real(kind=rk), dimension(:,:), allocatable   :: drhoa_rho
+    real(kind=rk), dimension(:,:), allocatable   :: drhoa
 
     ! in Mathematica calculated rhoa/rho
     real(kind=rk), dimension(:,:), allocatable   :: rhoa_rho

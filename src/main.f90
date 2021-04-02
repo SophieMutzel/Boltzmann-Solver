@@ -53,22 +53,22 @@ program main
   dz = params%dz
   z  = params%z_start
   it = 0
-  do while ( z <= params%z_max)
-!    !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),z,test,nd-1,params%A,params%B)
-    zpdz = z +params%dz_plot
-    T = params%mx/10**z
-!    test = geff_rho(T)
-!    call geffSM(T,params,Tprime)
-    Tprime = Ta(T,params)
-    ! HS interaction
-    argsint%g = params%gaxx(1)
-    call sigmav( Tprime, params, argsint, "aaxx", test )
-!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
-!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
-    z = zpdz
-    write(*,*) z, test, Hub( T, params ), ent( T, params )
-  end do
-stop
+!  do while ( z <= params%z_max)
+!!    !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),z,test,nd-1,params%A,params%B)
+!    zpdz = z +params%dz_plot
+!    T = params%mx/10**z
+!!    test = geff_rho(T)
+!!    call geffSM(T,params,Tprime)
+!    Tprime = Ta(T,params)
+!    ! HS interaction
+!    argsint%g = params%gaxx(1)
+!    call sigmav( Tprime, params, argsint, "aaxx", test )
+!!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
+!!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
+!    z = zpdz
+!    write(*,*) z, test, Hub( T, params ), ent( T, params )
+!  end do
+!stop
   if (rank==0) then
     write(*,'(80("_"))')
     write(*,*) "starting main time loop"
@@ -113,7 +113,9 @@ stop
     q_tot(1,:,it) = z
     q_tot(2:nrhs+1,:,it) = q_new
     T = params%mx/10**z
-    Tprime = Ta(T,params)
+    !Tprime=Tanew(T,params,q_new(3,:),q_new(1,:)/neq(T,params%mx,gDM)*s*rhoeq(T,params%mx,gDM))
+    !Tprime = Ta(T,params)
+    Tprime = q_new(3,1)
     s = ent(T,params)
     q_tot(nrhs+2,:,it) = neq(T, params%mx, gDM)/s
     do i=1,params%N

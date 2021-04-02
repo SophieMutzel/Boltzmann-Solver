@@ -18,7 +18,9 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
   mx = params%mx
   T = mx/10**lz
   argsint%T = T
-  Tprim(:) = Ta(T,params)!sqrt(params%gaff) * Ta(T,params)
+  !Tprim(:) = Ta(T,params)!sqrt(params%gaff) * Ta(T,params)
+  !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
+  Tprim = q(3,:)
   ! HS interaction
   do i=1,params%N
     ! DM axion interaction

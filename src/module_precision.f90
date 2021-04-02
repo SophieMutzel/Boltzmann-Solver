@@ -5,6 +5,7 @@ module module_precision
   integer, parameter, public         :: ik=selected_int_kind(8)
 
   real(kind=rk), parameter, public   :: pi  = 4.0 * atan(1.0)
+  real(kind=rk), parameter, public   :: l10 = log(10.0_rk)
   integer(kind=ik)                   :: BOLTZMANN_COMM
   real(kind=rk),parameter,public     :: ga=1.0_rk, ggamma=2.0_rk, gg=16.0_rk, gDM=4.0_rk
   real(kind=rk), dimension(9)        :: mf = (/ 0.000511, 0.1057, 1.777, 0.0046, 0.096, 4.18, 0.0022, 1.28, 173.0 /)
@@ -17,7 +18,7 @@ module module_precision
   real(kind=rk), parameter, public   :: Yxmxobs = 2.045e-10_rk
 
   ! number of rhs
-  integer(kind=ik), parameter, public :: nrhs = 2
+  integer(kind=ik), parameter, public :: nrhs = 3
 
   contains
   !initialize global communicator of MPI_World

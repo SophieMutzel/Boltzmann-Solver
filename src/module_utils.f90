@@ -143,6 +143,24 @@ module module_utils
       bessK2 = bk
       return
     end function bessK2
+    !Returns the modified Bessel function Kn(x) for positive x and n ≥ 2.
+    real (kind=rk) FUNCTION bessk_s(n,x)
+      IMPLICIT NONE
+      INTEGER(kind=ik), INTENT(IN)  :: n
+      REAL(kind=rk), INTENT(IN)     :: x
+      INTEGER(kind=ik)              :: j
+      REAL(kind=rk)                 :: bk,bkm,bkp,tox
+      !call assert(n >= 2, x > 0.0, ’bessk_s args’)
+      tox=2.0_rk/x
+      bkm=bessk0(x)
+      bk=bessk1(x)
+      do j=1,n-1
+        bkp=bkm+j*tox*bk
+        bkm=bk
+        bk=bkp
+      end do
+      bessk_s=bk
+    END FUNCTION bessk_s
 
     integer(kind=ik) function str2int(str)
       implicit none
