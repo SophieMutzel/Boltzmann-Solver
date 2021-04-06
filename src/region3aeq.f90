@@ -12,7 +12,7 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
   integer(kind=ik)                                  :: ier, i, neval,nd!, nr
   real(kind=rk), dimension(params%N)                :: Tp, sv_aaxx, sv_xxaa, neqzp,neqazp
   real(kind=rk), dimension(params%N)                :: gam_agff, gam_afgf, gam_xxff
-  real(kind=rk)                                     :: rhoeqDMT, neqDM, neqa, rhoeqaT, dTdlz, dT, ds
+  real(kind=rk)                                     :: rhoeqDMT, neqDM, neqa, rhoeqaT, dT, ds
   real(kind=rk)                                     :: rhoeqaTp, rhoeqDMTp, peqaTp, peqDMTp,rhoplusp
 
   q = reshape(Y,(/nrhs,params%N/))
@@ -59,47 +59,76 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
   nd = size(params%drhoa,2)
   call interp_linear(nd, params%drhoa(1,:),params%drhoa(2,:),T, drhoa)
   ! equilibrium values
+  ! rho,eq,DM(T)
   rhoeqDMT = rhoeq(T,mx,gDM)
-  neqDM    = neq(T,mx,gDM)
-  neqa     = neq(T,ma,ga)
+  ! rho,eq,a(T)
   rhoeqaT  = rhoeq(T,ma,ga)
-  ! dT/dlz
-  dTdlz   = -T*l10
+  ! neq,DM(T)
+  neqDM    = neq(T,mx,gDM)
+  ! neq,a(T)
+  neqa     = neq(T,ma,ga)
   ! delta T for finite difference in heff
   dT      = T/1000.0_rk
 
   do i = 1, params%N
-    ! rho,eq,a(T') and p,eq,a(T')
+    ! rho,eq,a(T')
     rhoeqaTp = rhoeq(Tp(i),ma,ga)
-    ! rho,eq,DM(T') and p,eq,DM(T')
+    ! rhoeq,DM(T')
     rhoeqDMTp = rhoeq(Tp(i),mx,gDM)
-    ! dT'/dlz
-    if ( q(3,i) > mx ) then
+    ! axions and DM in equilibrium and source term small
+    if ((sv_aaxx(i)*neqazp(i) > 0.001_rk*H) .and. (sv_xxaa(i)*neqzp(i) > 0.001_rk*H) &
+        .and. ((gam_agff(i)+2.0_rk*gam_afgf(i)) < 0.001_rk*sv_aaxx(i)*neqazp(i)*neqazp(i))) then
+      ! p,eq,a(T')
       peqaTp = peq(Tp(i),ma,ga)
+      ! p,eq,DM(T')
       peqDMTp = peq(Tp(i),mx,gDM)
+      ! dT'/dlz
       rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + rhoeqDMTp + peqaTp + peqDMTp ) - params%gaff(i)*params%gaff(i)*drhoa/H )&
                 /(drhoeq(Tp(i),mx,gDM)+drhoeq(Tp(i),ma,ga))
     else
-      if ( q(3,i) > params%ma ) then
-        ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
-        rhoplusp = 4.0_rk*(rhoeqaTp+rhoeqDMT/neqDM*s*q(1,i))-mx*q(1,i)*s
-        rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
-                  -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp+l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
-                  /drhoeq(Tp(i),ma,ga)
-
-      else
-        if ( q(3,i) > params%ma/5.0_rk ) then
-          ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
-          rhoplusp = 3.0_rk*(rhoeqaTp+rhoeqDMT/neqDM*s*q(1,i))
-          rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
-                  -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp+l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
-                  /drhoeq(Tp(i),ma,ga)
-        else
-          rhs(3,i) = 0.0_rk
-        end if
-      end if
+      ! derivative of entropy with respect to T
+      ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
+      ! rho = rhoeq(T')/neq(T')*s*Y
+      ! p = peq(T')/neq(T')*s*Y=T'*s*Y for MB
+      rhoplusp = 3.0_rk*s*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i) + q(3,i)*(q(1,i)+q(2,i)) )
+      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
+                  -s*(rhoeqaTp/neqazp(i)*rhs(2,i) + rhoeqDMTp/neqzp(i)*rhs(1,i)) &
+                  +T*l10*ds*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i)))&
+                  /(s*(q(1,i)*drhoeqneq( Tp(i), ma, ga ) + q(2,i)*drhoeqneq( Tp(i), mx, gDM )))
     end if
   end do
+!  do i = 1, params%N
+!    ! rho,eq,a(T') and p,eq,a(T')
+!    rhoeqaTp = rhoeq(Tp(i),ma,ga)
+!    ! rho,eq,DM(T') and p,eq,DM(T')
+!    rhoeqDMTp = rhoeq(Tp(i),mx,gDM)
+!    ! dT'/dlz
+!    if ( q(3,i) > mx ) then
+!      peqaTp = peq(Tp(i),ma,ga)
+!      peqDMTp = peq(Tp(i),mx,gDM)
+!      rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + rhoeqDMTp + peqaTp + peqDMTp ) - params%gaff(i)*params%gaff(i)*drhoa/H )&
+!                /(drhoeq(Tp(i),mx,gDM)+drhoeq(Tp(i),ma,ga))
+!    else
+!      if ( q(3,i) > params%ma ) then
+!        ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
+!        rhoplusp = 4.0_rk*rhoeqaTp + 3.0_rk*rhoeqDMT/neqDM*s*q(1,i)
+!        rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
+!                  -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp+l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
+!                  /drhoeq(Tp(i),ma,ga)
+!
+!      else
+!        if ( q(3,i) > params%ma/5.0_rk ) then
+!          ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
+!          rhoplusp = 3.0_rk*(rhoeqaTp+rhoeqDMT/neqDM*s*q(1,i))
+!          rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
+!                  -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp+l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
+!                  /drhoeq(Tp(i),ma,ga)
+!        else
+!          rhs(3,i) = 0.0_rk
+!        end if
+!      end if
+!    end if
+!  end do
 !  if ( q(3,1) > mx ) then
     !rhs(3,:) =(-4.0_rk*l10*(rhoeqDM+rhoeq(T,params%ma,ga)) +l10*params%gaff*params%gaff*drhoa)/(drhoeq(Tprim(1),mx,gDM)+drhoeq(Tprim(1),params%ma,ga))
 !  else
