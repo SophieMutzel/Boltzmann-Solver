@@ -44,7 +44,7 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
   H = Hub( T, params )
 
   rhs(1,:) = lz
-  rhs(2,:) = Ta(T,params)!sqrt(params%gaff)*Ta(T,params)
+  rhs(2,:) = Tprim!sqrt(params%gaff)*Ta(T,params)
   rhs(3,:) = s/H * sv_aaxx * q(2,:) * q(2,:)
   rhs(4,:) = s/H * sv_xxaa * q(1,:) * q(1,:)
   rhs(5,:) = (gam_agff + gam_afgf)/s/H

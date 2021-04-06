@@ -99,7 +99,6 @@ program main
 !    write(*,*) x_eval(i), y_eval(i)
 !  end do
 !stop
-
   z  = params%z_start
   do while ( z <= params%z_max .and. eps > conv_eps .or. z<=0.0_rk)
     it = it + 1
@@ -111,21 +110,21 @@ program main
     call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
 
     q_tot(1,:,it) = z
-    q_tot(2:nrhs+1,:,it) = q_new
+    q_tot(2:nrhs,:,it) = q_new(1:2,:)
     T = params%mx/10**z
     !Tprime=Tanew(T,params,q_new(3,:),q_new(1,:)/neq(T,params%mx,gDM)*s*rhoeq(T,params%mx,gDM))
     !Tprime = Ta(T,params)
     Tprime = q_new(3,1)
     s = ent(T,params)
-    q_tot(nrhs+2,:,it) = neq(T, params%mx, gDM)/s
+    q_tot(nrhs+1,:,it) = neq(T, params%mx, gDM)/s
     do i=1,params%N
-      q_tot(nrhs+3,i,it) = neq(Tprime, params%mx, gDM)/s!neq(sqrt(params%gaff(i))*Tprime, params%mx, gDM)/s
-      q_tot(nrhs+4,i,it) = neq(Tprime, params%ma, ga)/s!neq(sqrt(params%gaff(i))*Tprime, params%ma, ga)/s
+      q_tot(nrhs+2,i,it) = neq(Tprime, params%mx, gDM)/s
+      q_tot(nrhs+3,i,it) = neq(Tprime, params%ma, ga)/s
     end do
-    q_tot(nrhs+5,:,it) = params%mx/(Tprime)!params%mx/(sqrt(params%gaff)*Tprime)
+    q_tot(nrhs+4,:,it) = Tprime!params%mx/(sqrt(params%gaff)*Tprime)
 
     eps = max(abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it-1)),abs((q_tot(3,1,it)-q_tot(3,1,it-1))/q_tot(3,1,it-1)))
-    write(*,*) z, eps
+    write(*,*) z, eps, Tprime
 
   end do
 !  nit = 1

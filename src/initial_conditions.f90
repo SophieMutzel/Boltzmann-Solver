@@ -29,10 +29,10 @@ subroutine initial_conditions( params, q, q_new, q_tot, rhs )
 
   q_new = q
   q_tot(1,:,1) = params%z_start
-  q_tot(2:nrhs+1,:,1) = q
-  q_tot(nrhs+2,:,1) = neq(T_start, params%mx, gDM)/s
-  q_tot(nrhs+3,:,1) = q(1,:)
-  q_tot(nrhs+4,:,1) = q(2,:)
-  q_tot(nrhs+5,:,1) = Tprime
+  q_tot(2:nrhs,:,1) = q(1:2,:)
+  q_tot(nrhs+1,:,1) = neq(T_start, params%mx, gDM)/s
+  q_tot(nrhs+2,:,1) = q(1,:)
+  q_tot(nrhs+3,:,1) = q(2,:)
+  q_tot(nrhs+4,:,1) = Tprime
 
 end subroutine initial_conditions

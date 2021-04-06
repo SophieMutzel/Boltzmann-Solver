@@ -56,7 +56,7 @@ subroutine ini_cons_to_params( params, argsint )
 !   end select
 
    call read_matrix_from_file(trim(params%ini_direc)//'rhoprho59.txt', params%rhoa_rho, 2, .false.)
-   call read_matrix_from_file(trim(params%ini_direc)//'drhop59.txt', params%drhoa, 2, .false.)
+   call read_matrix_from_file(trim(params%ini_direc)//'drhop09.txt', params%drhoa, 2, .false.)
    call read_matrix_from_file(trim(params%ini_direc)//'alphas.dat', params%alpha_s, 2, .false.)
 
 end subroutine ini_cons_to_params

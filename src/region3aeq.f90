@@ -7,25 +7,27 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
   type (type_argsint), intent(inout)                :: argsint
   integer(kind=ik), intent(in)                      :: N
   real(kind=rk), dimension(nrhs,params%N)           :: q, rhs
-  real(kind=rk)                                     :: mx, T, mf, nc, s, H, drhoa
+  real(kind=rk)                                     :: mx, ma, T, mf, nc, s, H, drhoa
   real(kind=rk)                                     :: result
   integer(kind=ik)                                  :: ier, i, neval,nd!, nr
-  real(kind=rk), dimension(params%N)                :: Tprim, sv_aaxx, sv_xxaa, neqzp,neqazp
+  real(kind=rk), dimension(params%N)                :: Tp, sv_aaxx, sv_xxaa, neqzp,neqazp
   real(kind=rk), dimension(params%N)                :: gam_agff, gam_afgf, gam_xxff
-  real(kind=rk)                                     :: rhoeqDM, neqDM, neqa, rhoeqa, dTdlz, dT, ds
+  real(kind=rk)                                     :: rhoeqDMT, neqDM, neqa, rhoeqaT, dTdlz, dT, ds
+  real(kind=rk)                                     :: rhoeqaTp, rhoeqDMTp, peqaTp, peqDMTp,rhoplusp
 
   q = reshape(Y,(/nrhs,params%N/))
   mx = params%mx
+  ma = params%ma
   T = mx/10**lz
   s = ent( T, params )
   H = Hub( T, params )
   !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
-  Tprim(:) = q(3,:)
-  ! HS interaction
+  Tp(:) = q(3,:)!Ta(T,params)
   do i=1,params%N
+    ! HS interaction
     argsint%g = params%gaxx(i)
-    call sigmav( Tprim(i), params, argsint, "aaxx", sv_aaxx(i) )
-    !call sigmav( Tprim(i), params, argsint, "xxaa", sv_xxaa(i) )
+    call sigmav( Tp(i), params, argsint, "aaxx", sv_aaxx(i) )
+    call sigmav( Tp(i), params, argsint, "xxaa", sv_xxaa(i) )
 
     ! SM axion interaction
     argsint%g = params%gaff(i)
@@ -37,41 +39,81 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
     !call gamma_r_new( T, params, argsint, "xxff", gam_xxff(i) )
   end do
 
-  ! Y_x
   do i=1,params%N
-    neqzp(i) = neq(Tprim(i), mx, gDM)
-    neqazp(i) = neq(Tprim(i), params%ma, ga)
+    ! neq,DM(z')
+    neqzp(i) = neq(Tp(i), mx, gDM)
+    ! neq,a(z')
+    neqazp(i) = neq(Tp(i), params%ma, ga)
   end do
 
+  ! DM
+  !rhs(1,:) =  (sv_aaxx*neqazp*neqazp*(1.0_rk-q(1,:)*q(1,:)/neqzp/neqzp*s*s)/H/s)
+  ! axion
+  !rhs(2,:) =  sv_aaxx*neqazp*neqazp*(q(1,:)*q(1,:)/neqzp/neqzp*s*s-1.0_rk)/H/s + (gam_agff + 2.0_rk*gam_afgf)/H/s
+  !write(*,*)  q(1,:)*q(1,:)/neqzp/neqzp*s*s, q(2,:)*q(2,:)/neqazp/neqazp*s*s
+  !rhs(2,:) =  sv_aaxx*neqazp*neqazp*(1.0_rk - q(2,:)*q(2,:)/neqazp/neqazp*s*s)/H/s+ (gam_agff + 2.0_rk*gam_afgf)/H/s
+  rhs(1,:) =  l10* (-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx* q(2,:)*q(2,:))*s/H !+ gam_xxff/s/H
+  rhs(2,:) =  l10*(sv_xxaa*neqzp*neqzp*(1.0_rk - q(2,:)*q(2,:)/neqazp/neqazp*s*s)/H/s+ (gam_agff + 2.0_rk*gam_afgf)/H/s)
+
+  ! collision term for energy transfer
   nd = size(params%drhoa,2)
   call interp_linear(nd, params%drhoa(1,:),params%drhoa(2,:),T, drhoa)
-  rhs(1,:) = l10 * (sv_aaxx*neqazp*neqazp*(1.0_rk-q(1,:)*q(1,:)/neqzp/neqzp*s*s)/H/s)
-  rhs(2,:) = l10 * (-sv_aaxx*neqazp*neqazp*(1.0_rk-q(1,:)*q(1,:)/neqzp/neqzp*s*s)/H/s + (gam_agff+2.0_rk*gam_afgf)/H/s)
-!  if (Tprim(1)>mx) then
-!    rhs(3,:) = -4.0_rk*q(3,:)+drhoa/H
-!  else
-!    rhs(3,:) = -4.0_rk*q(3,:)+mx*q(1,:)/s+drhoa/H
-!  end if
-  rhoeqDM = rhoeq(T,mx,gDM)
-  neqDM   = neq(T,mx,gDM)
-  neqa    = neq(T,params%ma,ga)
-  rhoeqa  = rhoeq(T,params%ma,ga)
+  ! equilibrium values
+  rhoeqDMT = rhoeq(T,mx,gDM)
+  neqDM    = neq(T,mx,gDM)
+  neqa     = neq(T,ma,ga)
+  rhoeqaT  = rhoeq(T,ma,ga)
+  ! dT/dlz
   dTdlz   = -T*l10
-  dT      = 0.1_rk
-  if ( q(3,1) > mx ) then
-    rhs(3,:) =(-4.0_rk*l10*(rhoeqDM+rhoeq(T,params%ma,ga)) +l10*params%gaff*params%gaff*drhoa)/(drhoeq(T,mx,gDM)+drhoeq(T,params%ma,ga))
-  else
-    if (q(3,1)>params%ma) then
-      ds = 2.0_rk/15.0_rk*pi*pi*T*T* heff(T, params) + s * 0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
-      rhs(3,:) = (l10*(-4.0_rk*(rhoeq(T,params%ma,ga)+rhoeqDM/neqDM*s*q(1,:)) - mx*q(1,:)*s + drhoa*params%gaff*params%gaff) - &
-                (drhoeqneq( T, mx, gDM )*dTdlz*s + dTdlz*ds*rhoeqDM/neqDM  + rhoeqDM/neqDM*s*rhs(1,:)))/(drhoeq(T,params%ma,ga))
+  ! delta T for finite difference in heff
+  dT      = T/1000.0_rk
+
+  do i = 1, params%N
+    ! rho,eq,a(T') and p,eq,a(T')
+    rhoeqaTp = rhoeq(Tp(i),ma,ga)
+    ! rho,eq,DM(T') and p,eq,DM(T')
+    rhoeqDMTp = rhoeq(Tp(i),mx,gDM)
+    ! dT'/dlz
+    if ( q(3,i) > mx ) then
+      peqaTp = peq(Tp(i),ma,ga)
+      peqDMTp = peq(Tp(i),mx,gDM)
+      rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + rhoeqDMTp + peqaTp + peqDMTp ) - params%gaff(i)*params%gaff(i)*drhoa/H )&
+                /(drhoeq(Tp(i),mx,gDM)+drhoeq(Tp(i),ma,ga))
     else
-      rhs(3,:) = 0.0_rk
+      if ( q(3,i) > params%ma ) then
+        ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
+        rhoplusp = 4.0_rk*(rhoeqaTp+rhoeqDMT/neqDM*s*q(1,i))-mx*q(1,i)*s
+        rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
+                  -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp+l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
+                  /drhoeq(Tp(i),ma,ga)
+
+      else
+        if ( q(3,i) > params%ma/5.0_rk ) then
+          ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
+          rhoplusp = 3.0_rk*(rhoeqaTp+rhoeqDMT/neqDM*s*q(1,i))
+          rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
+                  -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp+l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
+                  /drhoeq(Tp(i),ma,ga)
+        else
+          rhs(3,i) = 0.0_rk
+        end if
+      end if
     end if
-  end if
+  end do
+!  if ( q(3,1) > mx ) then
+    !rhs(3,:) =(-4.0_rk*l10*(rhoeqDM+rhoeq(T,params%ma,ga)) +l10*params%gaff*params%gaff*drhoa)/(drhoeq(Tprim(1),mx,gDM)+drhoeq(Tprim(1),params%ma,ga))
+!  else
+!    if ( q(3,1) > params%ma ) then
+!      ds = 2.0_rk/15.0_rk*pi*pi*T*T* heff(T, params) + s * 0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
+!      rhs(3,:) = (l10*(-4.0_rk*(rhoeq(T,params%ma,ga)+rhoeqDM/neqDM*s*q(1,:)) - mx*q(1,:)*s + drhoa*params%gaff*params%gaff) - &
+!                (drhoeqneq( T, mx, gDM )*dTdlz*s + dTdlz*ds*rhoeqDM/neqDM  + rhoeqDM/neqDM*s*rhs(1,:)))/(drhoeq(T,params%ma,ga))
+!    else
+!      rhs(3,:) = 0.0_rk
+!    end if
+!  end if
 !if ((sv_aaxx(1)*neqazp(1) > 0.0000001_rk*H) .and. (sv_xxaa(1)*neqzp(1) > 0.0000001_rk*H) .and. ((gam_agff(1)+2.0_rk*gam_afgf(1)) < 0.0000001_rk*sv_aaxx(1)*neqazp(1)*neqazp(1))&
 !    .and. gam_xxff(1) < 0.0000001_rk*sv_aaxx(1)*neqazp(1)*neqazp(1)) then
-!  rhs(1,:) =  (-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx* q(2,:)*q(2,:))*s/H + gam_xxff/s/H
+!  rhs(1,:) =  (-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx* q(2,:)*q(2,:))*s/H !+ gam_xxff/s/H
 !  rhs(2,:) =  sv_xxaa*neqzp*neqzp*(1.0_rk - q(2,:)*q(2,:)/neqazp/neqazp*s*s)/H/s+ (gam_agff + 2.0_rk*gam_afgf)/H/s
 !else
 !  rhs(1,:) =  sv_xxaa*(-q(1,:)*q(1,:)&

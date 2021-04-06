@@ -36,8 +36,15 @@ module module_cosmo
       real(kind=rk), intent(in)           :: T, m, g
 
       rhoeq = 0.5_rk * g *m*m*T*(m*bessK1(m/T)+3.0_rk*T*bessK2(m/T)) /pi/pi
-
     end function rhoeq
+
+    real(kind=rk) function peq( T, m, g )
+      implicit none
+      real(kind=rk), intent(in)           :: T, m, g
+
+      peq = 0.5_rk * g *m*m*T*T*bessK2(m/T)/pi/pi
+
+    end function peq
 
     real(kind=rk) function drhoeq( T, m, g )
       ! d(rho_eq(T)/dT
@@ -76,7 +83,7 @@ module module_cosmo
       rhoa = rhoeq(Ta,params%ma,ga)
       rhoDM = rhoeq(Ta,params%mx,gDM)
       !Taroot = sqrt(params%gaff(1)*sqrt(( 10.75_rk/(1.0_rk) *rar )))*T !- Ta
-      Taroot = 30.0_rk*(rhoa+rhoDM)/(gSM*T*T*T*T*pi*pi*pi*pi)-params%gaff(1)*params%gaff(1)*rar
+      Taroot = (rhoa+rhoDM)/(gSM*T*T*T*T*pi*pi/30.0_rk)-params%gaff(1)*params%gaff(1)*rar
       !if (T>params%mx) then
       !  Taroot = rhoa+rhoDM - rhoprime
       !else
@@ -100,7 +107,7 @@ module module_cosmo
       implicit none
       real(kind=rk), intent(in)           :: T
       type (type_params), intent(in)      :: params
-      Ta = rtbis(Taroot,1e-3_rk,10000.0_rk,1e-10_rk,params,T,1.0_rk,1.0_rk)
+      Ta = rtbis(Taroot,1e-3_rk,1000.0_rk,1e-10_rk,params,T,1.0_rk,1.0_rk)
       !Ta = Taroot(T,T,params)!
     end function Ta
 

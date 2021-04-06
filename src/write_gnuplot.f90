@@ -24,7 +24,7 @@ subroutine write_gnuplot(unit_number, filename, Yobs)
     write(unit_number,*) "'", filename, ".txt' using 1:4  with lines ls   3 title '$Y_{\chi,eq}(T)$' , \"
     write(unit_number,*) "'", filename, ".txt' using 1:5  with lines ls   1  title '$Y_{\chi,eq}(T^\prime)$' , \"
     write(unit_number,*) "'", filename, ".txt' using 1:6  with lines ls   2  title '$Y_{a,eq}(T^\prime)$' , \"
-    write(unit_number,*) "'", filename, ".txt' using 1:7  with lines ls   6 title '$z^\prime$' , \"
+    write(unit_number,*) "'", filename, ".txt' using 1:7  with lines ls   6 title '$T^\prime$' , \"
     write(unit_number,*) Yobs, "   ls 7 title 'observed relic density'"
   else
     write(*,*) 'error', io_error,' while opening the file ', filename
