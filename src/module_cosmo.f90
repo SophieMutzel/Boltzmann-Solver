@@ -59,10 +59,11 @@ module module_cosmo
       real(kind=rk), intent(in)           :: T, m, g
       real(kind=rk)                       :: bk1, bk2
 
-      bk1 = bessK1(m/T)
-      bk2 = bessK2(m/T)
-      drhoeqneq = -((m*m* bk1*bk1 - bk2*(m*m*bessK0(m/T) + (m*m + 6.0_rk* T*T)*bk2) + &
-                  m*m*bk1*bessk_s(3,m/T))/(2.0_rk* T*T* bk2*bk2))
+      !bk1 = bessK1(m/T)
+      !bk2 = bessK2(m/T)
+      !drhoeqneq = -((m*m* bk1*bk1 - bk2*(m*m*bessK0(m/T) + (m*m + 6.0_rk* T*T)*bk2) + &
+      !            m*m*bk1*bessk_s(3,m/T))/(2.0_rk* T*T* bk2*bk2))
+      drhoeqneq = 3.0_rk/2.0_rk + (15.0_rk*T)/(4.0_rk*m) - (45.0_rk*T*T)/(8.0_rk*m*m)
     end function drhoeqneq
 
     real(kind=rk) function Taroot(Ta,T,params,rhoprime,facrhoDM)

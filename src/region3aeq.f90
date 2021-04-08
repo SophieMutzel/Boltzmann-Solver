@@ -68,20 +68,21 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
   ! neq,a(T)
   neqa     = neq(T,ma,ga)
   ! delta T for finite difference in heff
-  dT      = T/1000.0_rk
+  dT      = 1e-6_rk
 
   do i = 1, params%N
     ! rho,eq,a(T')
     rhoeqaTp = rhoeq(Tp(i),ma,ga)
     ! rhoeq,DM(T')
     rhoeqDMTp = rhoeq(Tp(i),mx,gDM)
+    ! p,eq,a(T')
+    peqaTp = peq(Tp(i),ma,ga)
+    ! p,eq,DM(T')
+    peqDMTp = peq(Tp(i),mx,gDM)
     ! axions and DM in equilibrium and source term small
-    if ((sv_aaxx(i)*neqazp(i) > 0.001_rk*H) .and. (sv_xxaa(i)*neqzp(i) > 0.001_rk*H) &
-        .and. ((gam_agff(i)+2.0_rk*gam_afgf(i)) < 0.001_rk*sv_aaxx(i)*neqazp(i)*neqazp(i))) then
-      ! p,eq,a(T')
-      peqaTp = peq(Tp(i),ma,ga)
-      ! p,eq,DM(T')
-      peqDMTp = peq(Tp(i),mx,gDM)
+    !if ((sv_aaxx(i)*neqazp(i) > 0.001_rk*H) .and. (sv_xxaa(i)*neqzp(i) > 0.001_rk*H) &
+    !    .and. ((gam_agff(i)+2.0_rk*gam_afgf(i)) < 0.001_rk*sv_aaxx(i)*neqazp(i)*neqazp(i))) then
+    if (lz<0.0_rk) then
       ! dT'/dlz
       rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + rhoeqDMTp + peqaTp + peqDMTp ) - params%gaff(i)*params%gaff(i)*drhoa/H )&
                 /(drhoeq(Tp(i),mx,gDM)+drhoeq(Tp(i),ma,ga))
@@ -90,11 +91,36 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
       ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
       ! rho = rhoeq(T')/neq(T')*s*Y
       ! p = peq(T')/neq(T')*s*Y=T'*s*Y for MB
-      rhoplusp = 3.0_rk*s*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i) + q(3,i)*(q(1,i)+q(2,i)) )
-      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
-                  -s*(rhoeqaTp/neqazp(i)*rhs(2,i) + rhoeqDMTp/neqzp(i)*rhs(1,i)) &
-                  +T*l10*ds*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i)))&
-                  /(s*(q(1,i)*drhoeqneq( Tp(i), ma, ga ) + q(2,i)*drhoeqneq( Tp(i), mx, gDM )))
+      ! both rho/n(T')
+      !rhoplusp = 3.0_rk*s*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i) + Tp(i)*(q(1,i)+q(2,i)) )
+      ! DM: rho/n(T'), a: rho/n(T)
+      !rhoplusp = 3.0_rk*s*(rhoeqaT/neqa*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i) + Tp(i)*q(1,i)+T*q(2,i) )
+      ! a: equilibrium distribution, DM: rho/n(T')
+      !rhoplusp = 3.0_rk*(rhoeqaTp + s*rhoeqDMTp/neqzp(i)*q(1,i) + Tp(i)*(q(1,i)*s+neqazp(i)) )
+      ! a: equilibrium distribution, DM: rho/n(T)
+      !rhoplusp = 3.0_rk*(rhoeqaTp +peqaTp+ s*rhoeqDMT/neqDM*q(1,i) + T*q(1,i)*s )
+      ! dT'/dlz
+      ! both rho/n(T')
+!      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
+!                  -s*(rhoeqaTp/neqazp(i)*rhs(2,i) + rhoeqDMTp/neqzp(i)*rhs(1,i)) &
+!                  +T*l10*ds*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i)))&
+!                  /(s*(q(1,i)*drhoeqneq( Tp(i), mx, gDM ) + q(2,i)*drhoeqneq( Tp(i), ma, ga )))
+      ! a: equilibrium distribution, DM: rho/n(T')
+!      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
+!            -s*(rhoeqDMTp/neqzp(i)*rhs(1,i)) &
+!            +T*l10*ds*(rhoeqDMTp/neqzp(i)*q(1,i)))&
+!            /(s*(q(1,i)*drhoeqneq( Tp(i), mx, gDM )) +drhoeq(Tp(i),ma,ga))
+      ! DM: rho/n(T'), a: rho/n(T)
+!      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
+!            -s*(rhoeqDMTp/neqzp(i)*rhs(1,i)) &
+!            +T*l10*ds*(rhoeqDMTp/neqzp(i)*q(1,i))+&
+!            T*l10*drhoeqneq( T, ma, ga )*s*q(2,i)+T*l10*rhoeqaT/neqa*q(2,i)*ds&
+!                          -rhoeqaT/neqa*rhs(2,i))&
+!            /(s*(q(1,i)*drhoeqneq( Tp(i), mx, gDM )))
+      ! DM: rho/n(T), a: equilibrium
+!      rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
+!              -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp-l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
+!              /drhoeq(Tp(i),ma,ga)
     end if
   end do
 !  do i = 1, params%N

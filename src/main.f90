@@ -74,7 +74,7 @@ program main
     write(*,*) "starting main time loop"
   end if
 
-  atol = 1e-10_rk ! absolute tolerance
+  atol = 1e-13_rk ! absolute tolerance
   rtol = 1e-6_rk ! relative tolerance
 
   !options = set_opts( DENSE_J = .true.,USER_SUPPLIED_JACOBIAN= .false.,&
