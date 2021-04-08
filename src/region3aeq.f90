@@ -95,6 +95,8 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
       !rhoplusp = 3.0_rk*s*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i) + Tp(i)*(q(1,i)+q(2,i)) )
       ! DM: rho/n(T'), a: rho/n(T)
       !rhoplusp = 3.0_rk*s*(rhoeqaT/neqa*q(2,i) + rhoeqDMTp/neqzp(i)*q(1,i) + Tp(i)*q(1,i)+T*q(2,i) )
+      ! DM: rho/n(T), a: rho/n(T')
+      rhoplusp = 3.0_rk*s*(rhoeqaTp/neqazp(i)*q(2,i) + rhoeqDMT/neqDM*q(1,i) + T*q(1,i)+Tp(i)*q(2,i) )
       ! a: equilibrium distribution, DM: rho/n(T')
       !rhoplusp = 3.0_rk*(rhoeqaTp + s*rhoeqDMTp/neqzp(i)*q(1,i) + Tp(i)*(q(1,i)*s+neqazp(i)) )
       ! a: equilibrium distribution, DM: rho/n(T)
@@ -117,6 +119,13 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
 !            T*l10*drhoeqneq( T, ma, ga )*s*q(2,i)+T*l10*rhoeqaT/neqa*q(2,i)*ds&
 !                          -rhoeqaT/neqa*rhs(2,i))&
 !            /(s*(q(1,i)*drhoeqneq( Tp(i), mx, gDM )))
+      ! DM: rho/n(T), a: rho/n(T')
+      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
+            -s*(rhoeqaTp/neqazp(i)*rhs(2,i)) &
+            +T*l10*ds*(rhoeqaTp/neqazp(i)*q(2,i))+&
+            T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
+                          -rhoeqDMT/neqDM*rhs(1,i))&
+            /(s*(q(2,i)*drhoeqneq( Tp(i), ma, ga )))
       ! DM: rho/n(T), a: equilibrium
 !      rhs(3,i) = (T*l10*drhoeqneq( T, mx, gDM )*s*q(1,i)+T*l10*rhoeqDMT/neqDM*q(1,i)*ds&
 !              -rhoeqDMT/neqDM*rhs(1,i)-l10*rhoplusp-l10*params%gaff(i)*params%gaff(i)*drhoa/H)&
