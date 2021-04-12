@@ -80,7 +80,6 @@ subroutine region3a_in_n( N, lz, Y, Ynew, params, argsint )
                 /(drhoeq(Tp(i),mx,gDM)+drhoeq(Tp(i),ma,ga))
     else
       ! derivative of entropy with respect to T
-      !ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
       ! rho = rhoeq(T')/neq(T')*s*Y
       ! p = peq(T')/neq(T')*s*Y=T'*s*Y for MB
       rhoeqneqa = rhoeqneq(Tp(i),ma)
@@ -91,11 +90,6 @@ subroutine region3a_in_n( N, lz, Y, Ynew, params, argsint )
       rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
                   - ( rhoeqneqa*rhs(2,i) + rhoeqneqDM*rhs(1,i))) &
                   /(q(1,i)*drhoeqneq( Tp(i), mx ) + q(2,i)*drhoeqneq( Tp(i), ma ))
-      ! a: equilibrium distribution, DM: rho/n(T')
-!      rhs(3,i) = (l10*( -rhoplusp - params%gaff(i)*params%gaff(i)*drhoa/H) &
-!            -s*(rhoeqDMTp/neqzp(i)*rhs(1,i)) &
-!            +T*l10*ds*(rhoeqDMTp/neqzp(i)*q(1,i)))&
-!            /(s*(q(1,i)*drhoeqneq( Tp(i), mx, gDM )) +drhoeq(Tp(i),ma,ga))
     end if
   end do
 Ynew = reshape(rhs,(/N/))
