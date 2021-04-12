@@ -193,23 +193,45 @@ module module_rhs
       end if
       select case(sigma)
         case("aaxx")
-          call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-                1, epsabs, epsrel, result, abserr, neval, ier)
-          if (ier > 0) then
-            call qags(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-                  1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
-            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+          if (T>0.5_rk) then
+            call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) then
+              call qags(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                    1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+              if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+            end if
+            sv = result/4.0_rk/(2.0_rk*T*ma*ma*ma*ma*bessK2(ma/T)* bessK2(ma/T))
+          else
+            call qagi(kernel_aaxx_series,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) then
+              call qags(kernel_aaxx_series,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                    1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+              if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+            end if
+            sv = result
           end if
-          sv = result/4.0_rk/(2.0_rk*T*ma*ma*ma*ma*bessK2(ma/T)* bessK2(ma/T))
         case("xxaa")
-          call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-                1, epsabs, epsrel, result, abserr, neval, ier)
-          if (ier > 0) then
-            call qags(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-                  1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
-            if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+          if (T>0.5_rk) then
+            call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) then
+              call qags(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                    1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+              if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+            end if
+            sv = result/4.0_rk/(2.0_rk*T*mx*mx*mx*mx* bessK2(mx/T)* bessK2(mx/T))
+          else
+            call qagi(kernel_xxaa_series,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                  1, epsabs, epsrel, result, abserr, neval, ier)
+            if (ier > 0) then
+              call qags(kernel_xxaa_series,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
+                    1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
+              if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
+            end if
+            sv = result
           end if
-          sv = result/4.0_rk/(2.0_rk*T*mx*mx*mx*mx* bessK2(mx/T)* bessK2(mx/T))
 !        case("agff")
 !          sv = 0.0_rk
 !          do i=1, 9
@@ -319,11 +341,47 @@ module module_rhs
         return
     end function F
 
+    real(kind=rk) function kernel_xxaa_series( s, argsint )
+      implicit none
+      real(kind=rk), intent(in)           :: s
+      type (type_argsint), intent(in)     :: argsint
+      real(kind=rk)                       :: mx, T
+
+      mx = argsint%mx
+      T = argsint%T
+
+      kernel_xxaa_series = sigma_xxaa(s,mx,argsint%ma,argsint%g)*&
+                    F(s,mx,mx)*F(s,mx,mx)/sqrt(s)*&
+                    (exp((2.0_rk*mx - sqrt(s))/T)* mx* &
+                    (1140.0_rk*s*T*T -60.0_rk*mx*T*(8.0_rk*s + 3.0_rk*sqrt(s)*T)&
+                    +mx*mx*(128.0_rk*s + 48.0_rk*sqrt(s)*T - 15.0_rk*T*T)))&
+                    /(128.0_rk*mx*mx*mx*mx*mx*sqrt(2.0_rk*pi)*s**1.25_rk*T**1.5_rk)
+
+    end function kernel_xxaa_series
+
+    real(kind=rk) function kernel_aaxx_series( s, argsint )
+      implicit none
+      real(kind=rk), intent(in)           :: s
+      type (type_argsint), intent(in)     :: argsint
+      real(kind=rk)                       :: ma, T
+
+      ma = argsint%ma
+      T = argsint%T
+
+      kernel_aaxx_series = sigma_aaxx(s,argsint%mx,ma,argsint%g)*&
+                    F(s,ma,ma)*F(s,ma,ma)/sqrt(s)*&
+                    (exp((2.0_rk*ma - sqrt(s))/T)* ma* &
+                    (1140.0_rk*s*T*T -60.0_rk*ma*T*(8.0_rk*s + 3.0_rk*sqrt(s)*T)&
+                    +ma*ma*(128.0_rk*s + 48.0_rk*sqrt(s)*T - 15.0_rk*T*T)))&
+                    /(128.0_rk*ma*ma*ma*ma*ma*sqrt(2.0_rk*pi)*s**1.25_rk*T**1.5_rk)
+
+    end function kernel_aaxx_series
 
     !include "rhs_boltzmann.f90"
     !include "rhs_region3a2.f90"
     !include "region3a_log.f90"
     include "rhs_contributions.f90"
     include "region3aeq.f90"
+    include "region3a_in_n.f90"
     include "RK4.f90"
 end module

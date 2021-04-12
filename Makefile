@@ -81,7 +81,7 @@ $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR
 
 $(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
 	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o \
-	RK4.f90 rhs_contributions.f90 region3aeq.f90
+	RK4.f90 rhs_contributions.f90 region3aeq.f90 region3a_in_n.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/dvode.o: dvode.f90  $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o

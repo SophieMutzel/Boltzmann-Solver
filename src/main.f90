@@ -59,14 +59,15 @@ program main
 !    T = params%mx/10**z
 !!    test = geff_rho(T)
 !!    call geffSM(T,params,Tprime)
-!    Tprime = Ta(T,params)
+!    !Tprime = Ta(T,params)
 !    ! HS interaction
-!    argsint%g = params%gaxx(1)
-!    call sigmav( Tprime, params, argsint, "aaxx", test )
+!    !argsint%g = params%gaxx(1)
+!    !call sigmav( Tprime, params, argsint, "aaxx", test )
 !!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
 !!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
 !    z = zpdz
-!    write(*,*) z, test, Hub( T, params ), ent( T, params )
+!    !write(*,*) z, test, Hub( T, params ), ent( T, params )
+!    write(*,*) z, geff_s(T), 0.5_rk*(geff_s(T+1e-8_rk)-geff_s(T-1e-8_rk))/1e-8_rk
 !  end do
 !stop
   if (rank==0) then
@@ -89,7 +90,7 @@ program main
   Y = reshape(q, (/nrhs*params%N/) )
   it = 1
 
-  call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
+  !call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
 
   eps = 1.0_rk
   conv_eps = 1e-3_rk
@@ -103,29 +104,27 @@ program main
   do while ( z <= params%z_max .and. eps > conv_eps .or. z<=0.0_rk)
     it = it + 1
     zpdz = z + params%dz_plot
-    CALL VODE_F90( region3a_eq, nrhs*params%N, Y, z, zpdz, itask, &
+    CALL VODE_F90( region3a_in_n, nrhs*params%N, Y, z, zpdz, itask, &
                    istate, OPTIONS, params, argsint )
     q_new = reshape(Y,(/nrhs, params%N/))
     z = zpdz
-    call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
-
+    !call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
     q_tot(1,:,it) = z
     q_tot(2:nrhs,:,it) = q_new(1:2,:)
     T = params%mx/10**z
     !Tprime=Tanew(T,params,q_new(3,:),q_new(1,:)/neq(T,params%mx,gDM)*s*rhoeq(T,params%mx,gDM))
     !Tprime = Ta(T,params)
     Tprime = q_new(3,1)
-    s = ent(T,params)
-    q_tot(nrhs+1,:,it) = neq(T, params%mx, gDM)/s
+    !s = ent(T,params)
+    q_tot(nrhs+1,:,it) = neq(T, params%mx, gDM)!/s
     do i=1,params%N
-      q_tot(nrhs+2,i,it) = neq(Tprime, params%mx, gDM)/s
-      q_tot(nrhs+3,i,it) = neq(Tprime, params%ma, ga)/s
+      q_tot(nrhs+2,i,it) = neq(Tprime, params%mx, gDM)!/s
+      q_tot(nrhs+3,i,it) = neq(Tprime, params%ma, ga)!/s
     end do
     q_tot(nrhs+4,:,it) = Tprime!params%mx/(sqrt(params%gaff)*Tprime)
 
     eps = max(abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it-1)),abs((q_tot(3,1,it)-q_tot(3,1,it-1))/q_tot(3,1,it-1)))
     write(*,*) z, eps, Tprime
-
   end do
 !  nit = 1
 !  do while ( it < params%nt)
@@ -171,7 +170,7 @@ program main
   !  call write_matrix("temp/"//exp2str(params%gaff(i))//exp2str(params%gaxx(i))//".txt",q_tot(:,i,:))
     call write_matrix("temp/"//trim(adjustl(params%file))//".txt",q_tot(:,i,1:it))
     call write_matrix("temp/rhs_"//trim(adjustl(params%file))//".txt",rhs(:,i,1:it))
-    call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),Yxmxobs/params%mx)
+    call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),Yxmxobs/params%mx*ent(T,params))
     call write_gnuplot_rhs(99, "temp/rhs_"//trim(adjustl(params%file)))
     if (io_error==0) then
       write(97,*) params%gaxx(i)*params%gaff(i), params%gaxx(i), q_tot(2,i,it)

@@ -4,40 +4,40 @@ module module_dof
   use module_params
 
   contains
-    subroutine geffSM(T,params,g)
-
-      implicit none
-      type (type_params), intent(in)      :: params
-      real(kind=rk), intent(in)           :: T
-      real(kind=rk), intent(out)          :: g
-      integer(kind=ik)                    :: nd,n
-
-      n = size(params%geff(1,:))
-      !nd = size(params%geff(1,1:n:3))
-
-      if (T > params%geff(1,n)) then
-        g = params%geff(1,n)
-      else
-        call interp_linear(n, params%geff(1,:),params%geff(2,:),T, g)
-      end if
-    end subroutine geffSM
-
-    subroutine heffSM(T,params,g)
-
-      implicit none
-      type (type_params), intent(in)        :: params
-      real(kind=rk), intent(in)             :: T
-      real(kind=rk), intent(out)            :: g
-      integer(kind=ik)                      :: nd
-
-      nd = size(params%heff,2)
-
-      if (T > params%heff(1,nd)) then
-        g = params%heff(1,nd)
-      else
-        call interp_linear( nd, params%heff(1,:), params%heff(2,:), T, g )
-      end if
-    end subroutine heffSM
+!    subroutine geffSM(T,params,g)
+!
+!      implicit none
+!      type (type_params), intent(in)      :: params
+!      real(kind=rk), intent(in)           :: T
+!      real(kind=rk), intent(out)          :: g
+!      integer(kind=ik)                    :: nd,n
+!
+!      n = size(params%geff(1,:))
+!      !nd = size(params%geff(1,1:n:3))
+!
+!      if (T > params%geff(1,n)) then
+!        g = params%geff(1,n)
+!      else
+!        call interp_linear(n, params%geff(1,:),params%geff(2,:),T, g)
+!      end if
+!    end subroutine geffSM
+!
+!    subroutine heffSM(T,params,g)
+!
+!      implicit none
+!      type (type_params), intent(in)        :: params
+!      real(kind=rk), intent(in)             :: T
+!      real(kind=rk), intent(out)            :: g
+!      integer(kind=ik)                      :: nd
+!
+!      nd = size(params%heff,2)
+!
+!      if (T > params%heff(1,nd)) then
+!        g = params%heff(1,nd)
+!      else
+!        call interp_linear( nd, params%heff(1,:), params%heff(2,:), T, g )
+!      end if
+!    end subroutine heffSM
     real(kind=rk) function heff(T,params)
 
       implicit none
@@ -59,6 +59,21 @@ module module_dof
       implicit none
       type (type_params), intent(in)        :: params
       real(kind=rk), intent(in)             :: T
+      real(kind=rk)                         :: gSM, gHS
+      integer(kind=ik)                      :: nd
+
+      nd = size(params%geff_HS,2)
+      gSM = geff_rho(T)
+      call interp_linear(nd, params%geff_HS(1,:),params%geff_HS(2,:),log10(T), gHS)
+      geff = gSM + gHS
+      return
+    end function geff
+
+    real(kind=rk) function sqrtgstar(T,params)
+
+      implicit none
+      type (type_params), intent(in)        :: params
+      real(kind=rk), intent(in)             :: T
       real(kind=rk)                         :: gSM, gHS, hHS, hSM
       integer(kind=ik)                      :: nd,nd2
 
@@ -66,14 +81,11 @@ module module_dof
       nd2 = size(params%heff_HS,2)
       gSM = geff_rho(T)
       hSM = geff_s(T)
-      !call geffSM(T,params,gSM)
-      !call heffSM (T,params,hSM)
       call interp_linear(nd, params%geff_HS(1,:),params%geff_HS(2,:),log10(T), gHS)
       call interp_linear(nd2, params%heff_HS(1,:),params%heff_HS(2,:),log10(T), hHS)
-      !geff = gSM *(1 + hHS / hSM - 0.5_rk*gSM*gSM*gHS / hSM/hSM)
-      geff = sqrt(gSM) *(1 + hHS / hSM - 0.5_rk*gSM*gHS / hSM/hSM)
+      sqrtgstar = sqrt(gSM) *(1 + hHS / hSM - 0.5_rk*gSM*gHS / hSM/hSM)
       return
-    end function geff
+    end function sqrtgstar
 
     real(kind=rk) function hi(y,argsint)
       implicit none

@@ -15,14 +15,14 @@ subroutine initial_conditions( params, q, q_new, q_tot, rhs )
 !  nr = size(params%rhoa_rho,2)
 !  call interp_linear(nr, params%rhoa_rho(1,:),params%rhoa_rho(2,:),T_start, rar)
 !  rho = rar*geff_rho(T_start)*pi*pi/30.0_rk*T_start*T_start*T_start*T_start
-  s = ent(T_start, params)
+  !s = ent(T_start, params)
   !Tprime = Tanew(T_start,params,(/rho/),(/1.0_rk/))
   Tprime = Ta(T_start,params)
   do i=1,params%N
     ! Y_chi=Yeq(T')
-    q(1,i) = neq(Tprime, params%mx, gDM)/s
+    q(1,i) = neq(Tprime, params%mx, gDM)!/s
     ! Y_a=Yeq,a(T')
-    q(2,i) = neq(Tprime, params%ma, ga)/s
+    q(2,i) = neq(Tprime, params%ma, ga)!/s
     ! rho'=rhoeq,x(T')+rhoeq,a(T')
     q(3,i) = Tprime!rhoeq(Tprime, params%ma, ga)+rhoeq(Tprime, params%mx, gDM)
   end do
@@ -30,7 +30,7 @@ subroutine initial_conditions( params, q, q_new, q_tot, rhs )
   q_new = q
   q_tot(1,:,1) = params%z_start
   q_tot(2:nrhs,:,1) = q(1:2,:)
-  q_tot(nrhs+1,:,1) = neq(T_start, params%mx, gDM)/s
+  q_tot(nrhs+1,:,1) = neq(T_start, params%mx, gDM)!/s
   q_tot(nrhs+2,:,1) = q(1,:)
   q_tot(nrhs+3,:,1) = q(2,:)
   q_tot(nrhs+4,:,1) = Tprime
