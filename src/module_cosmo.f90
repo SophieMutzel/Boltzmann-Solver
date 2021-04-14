@@ -129,7 +129,7 @@ module module_cosmo
       implicit none
       real(kind=rk), intent(in)           :: T
       type (type_params), intent(in)      :: params
-      Ta = rtbis(Taroot,1e-3_rk,1000.0_rk,1e-10_rk,params,T,1.0_rk,1.0_rk)
+      Ta = rtbis(Taroot,1e-4_rk,10000.0_rk,1e-10_rk,params,T,1.0_rk,1.0_rk)
       !Ta = Taroot(T,T,params)!
     end function Ta
 

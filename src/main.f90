@@ -83,7 +83,7 @@ program main
                     !METHOD_FLAG=25,LOWER_BANDWIDTH=nrhs-1, UPPER_BANDWIDTH=nrhs-1,RELERR=rtol,ABSERR=atol )
   !options = set_opts( METHOD_FLAG=25, BANDED_J = .true.,USER_SUPPLIED_JACOBIAN= .false.,&
                     !  RELERR=rtol,ABSERR=atol, LOWER_BANDWIDTH=nrhs-1, UPPER_BANDWIDTH=nrhs-1 )
-  OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=dz,HMAX=0.0001_rk,MXSTEP=100000)
+  OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=dz,HMAX=0.0001_rk,MXSTEP=10000)
   itask = 1
   istate = 1
   allocate(Y(nrhs*params%N))
@@ -109,17 +109,17 @@ program main
     q_new = reshape(Y,(/nrhs, params%N/))
     z = zpdz
     !call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
-    q_tot(1,:,it) = z
-    q_tot(2:nrhs,:,it) = q_new(1:2,:)
     T = params%mx/10**z
+    s = ent(T,params)
+    q_tot(1,:,it) = z
+    q_tot(2:nrhs,:,it) = q_new(1:2,:)/s
     !Tprime=Tanew(T,params,q_new(3,:),q_new(1,:)/neq(T,params%mx,gDM)*s*rhoeq(T,params%mx,gDM))
     !Tprime = Ta(T,params)
     Tprime = q_new(3,1)
-    !s = ent(T,params)
-    q_tot(nrhs+1,:,it) = neq(T, params%mx, gDM)!/s
+    q_tot(nrhs+1,:,it) = neq(T, params%mx, gDM)/s
     do i=1,params%N
-      q_tot(nrhs+2,i,it) = neq(Tprime, params%mx, gDM)!/s
-      q_tot(nrhs+3,i,it) = neq(Tprime, params%ma, ga)!/s
+      q_tot(nrhs+2,i,it) = neq(Tprime, params%mx, gDM)/s
+      q_tot(nrhs+3,i,it) = neq(Tprime, params%ma, ga)/s
     end do
     q_tot(nrhs+4,:,it) = Tprime!params%mx/(sqrt(params%gaff)*Tprime)
 
@@ -165,17 +165,17 @@ program main
   end if
 
   ! write results to file
-  open (unit=97, file="temp/compare2019.txt", status='old', action='write', position='append', iostat=io_error)
+  open (unit=97, file="temp/in_n.txt", status='old', action='write', position='append', iostat=io_error)
   do i=1,params%N
   !  call write_matrix("temp/"//exp2str(params%gaff(i))//exp2str(params%gaxx(i))//".txt",q_tot(:,i,:))
     call write_matrix("temp/"//trim(adjustl(params%file))//".txt",q_tot(:,i,1:it))
     call write_matrix("temp/rhs_"//trim(adjustl(params%file))//".txt",rhs(:,i,1:it))
-    call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),Yxmxobs/params%mx*ent(T,params))
+    call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),Yxmxobs/params%mx)
     call write_gnuplot_rhs(99, "temp/rhs_"//trim(adjustl(params%file)))
     if (io_error==0) then
       write(97,*) params%gaxx(i)*params%gaff(i), params%gaxx(i), q_tot(2,i,it)
     else
-      write(*,*) 'error', io_error,' while opening the file temp/compare2019.txt'
+      write(*,*) 'error', io_error,' while opening the file temp/in_n.txt'
     end if
   end do
   close(97)

@@ -193,7 +193,7 @@ module module_rhs
       end if
       select case(sigma)
         case("aaxx")
-          if (T>0.5_rk) then
+          if (T>0.03_rk) then
             call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
                   1, epsabs, epsrel, result, abserr, neval, ier)
             if (ier > 0) then
@@ -213,7 +213,7 @@ module module_rhs
             sv = result
           end if
         case("xxaa")
-          if (T>0.5_rk) then
+          if (T>0.03_rk) then
             call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
                   1, epsabs, epsrel, result, abserr, neval, ier)
             if (ier > 0) then
