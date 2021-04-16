@@ -66,19 +66,26 @@ module module_cosmo
       ! rho_eq(T)/neq(T)
       implicit none
       real(kind=rk), intent(in)           :: T, m
-      if (T>0.2_rk) then
+      if (T>0.02_rk) then
         rhoeqneq = 3*T + m*bessK1(m/T)/bessK2(m/T)
       else
-        rhoeqneq = m + (3.0_rk*T)/2.0_rk
+        rhoeqneq = m + (3.0_rk*T)/2.0_rk+ (15.0_rk*T*T)/(8.0_rk*m)
       end if
     end function rhoeqneq
     real(kind=rk) function drhoeqneq( T, m )
       ! d(rho_eq(T)/neq(T))/dT
       implicit none
       real(kind=rk), intent(in)           :: T, m
-      real(kind=rk)                       :: bk1, bk2
-      if (T<0.2_rk) then
-        drhoeqneq = 3.0_rk/2.0_rk + (15.0_rk*T)/(4.0_rk*m) - (45.0_rk*T*T)/(8.0_rk*m*m)
+      real(kind=rk)                       :: bk1, bk2, T2,m2
+      if (T/m<0.03_rk) then
+        T2 = T*T
+        m2 = m*m
+        drhoeqneq = 3.0_rk/2.0_rk + (15.0_rk*T)/(4.0_rk*m) - &
+                    (45.0_rk*T2)/(8.0_rk*m2) +((135.0_rk*T*T2)/(32.0_rk*m*m2))&
+                    +((225.0_rk*T2*T2)/(32.0_rk*m2*m2))-&
+                    ((22275.0_rk*T2*T2*T)/(512.0_rk*m2*m2*m))+&
+                    (4725.0_rk*T2*T2*T2)/(32.0_rk*m2*m2*m2)&
+                    -((1905525.0_rk*T2*T2*T2*T)/(4096.0_rk*m2*m2*m2*m))
       else
       bk1 = bessK1(m/T)
       bk2 = bessK2(m/T)

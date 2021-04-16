@@ -20,11 +20,11 @@ subroutine write_gnuplot_rhs(unit_number, filename)
     write(unit_number,*)  "set grid xtics lc rgb '#bbbbbb' lw 1 lt 0"
     write(unit_number,*)  "load 'gnuplot-palettes-master/dark2.pal'"
     write(unit_number,*)  "plot '", filename, ".txt' using 1:2 with lines ls   1 title '$T^\prime$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:3 with lines ls   2 title '$a a \rightarrow \chi \chi$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:4 with lines ls   3 title '$\chi \chi \rightarrow aa$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:5 with lines ls   4 title '$ff \rightarrow a i$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:6 with lines ls   5 title '$ff \rightarrow \chi \chi$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:7 with lines ls   2 dashtype 2 title '$\chi \chi \rightarrow aa$ eq' "
+    write(unit_number,*)  "'", filename, ".txt' using 1:3 with lines ls   2 title 'dYx', \"!'$a a \rightarrow \chi \chi$' , \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:4 with lines ls   3 title 'dYa', \"!'$\chi \chi \rightarrow aa$' , \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:5 with lines ls   4 title 'dTp', \"!'$ff \rightarrow a i$' , \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:6 with lines ls   5 title 'sv aa->xx', \"!'$ff \rightarrow \chi \chi$' , \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:7 with lines ls   2 dashtype 2 title 'denominator', \"!'$\chi \chi \rightarrow aa$ eq' "
   else
     write(*,*) 'error', io_error,' while opening the file ', filename
   end if

@@ -53,23 +53,24 @@ program main
   dz = params%dz
   z  = params%z_start
   it = 0
-!  do while ( z <= params%z_max)
-!!    !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),z,test,nd-1,params%A,params%B)
-!    zpdz = z +params%dz_plot
-!    T = params%mx/10**z
-!!    test = geff_rho(T)
-!!    call geffSM(T,params,Tprime)
-!    !Tprime = Ta(T,params)
-!    ! HS interaction
-!    !argsint%g = params%gaxx(1)
-!    !call sigmav( Tprime, params, argsint, "aaxx", test )
-!!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
-!!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
-!    z = zpdz
-!    !write(*,*) z, test, Hub( T, params ), ent( T, params )
-!    write(*,*) z, geff_s(T), 0.5_rk*(geff_s(T+1e-8_rk)-geff_s(T-1e-8_rk))/1e-8_rk
-!  end do
-!stop
+  do while ( z <= params%z_max)
+!    !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),z,test,nd-1,params%A,params%B)
+    zpdz = z +params%dz_plot
+    T = params%mx/10**z
+!    test = geff_rho(T)
+!    call geffSM(T,params,Tprime)
+    !Tprime = Ta(T,params)
+    ! HS interaction
+    !argsint%g = params%gaxx(1)
+    !call sigmav( Tprime, params, argsint, "aaxx", test )
+!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
+!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
+    z = zpdz
+    !write(*,*) z, test, Hub( T, params ), ent( T, params )
+    call sigmav( T, params, argsint, "aaxx", test )
+    write(*,*) z, T,  test
+  end do
+stop
   if (rank==0) then
     write(*,'(80("_"))')
     write(*,*) "starting main time loop"
@@ -90,7 +91,7 @@ program main
   Y = reshape(q, (/nrhs*params%N/) )
   it = 1
 
-  !call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
+  call rhs_contributions_in_n( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
 
   eps = 1.0_rk
   conv_eps = 1e-3_rk
@@ -104,11 +105,12 @@ program main
   do while ( z <= params%z_max .and. eps > conv_eps .or. z<=0.0_rk)
     it = it + 1
     zpdz = z + params%dz_plot
+    call rhs_contributions_in_n( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
+
     CALL VODE_F90( region3a_in_n, nrhs*params%N, Y, z, zpdz, itask, &
                    istate, OPTIONS, params, argsint )
     q_new = reshape(Y,(/nrhs, params%N/))
     z = zpdz
-    !call rhs_contributions( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it) )
     T = params%mx/10**z
     s = ent(T,params)
     q_tot(1,:,it) = z
@@ -124,6 +126,8 @@ program main
     q_tot(nrhs+4,:,it) = Tprime!params%mx/(sqrt(params%gaff)*Tprime)
 
     eps = max(abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it-1)),abs((q_tot(3,1,it)-q_tot(3,1,it-1))/q_tot(3,1,it-1)))
+    !if (z>1.0_rk ) write(*,*) z, q_new(1,1)/(exp(-params%mx/Tprime)*(gDM*(params%mx*Tprime/pi)**(1.5_rk)/(2.0_rk* sqrt(2.0_rk)))),&
+    !                q_new(2,1)/(exp(-params%ma/Tprime)*(ga*(params%ma*Tprime/pi)**(1.5_rk)/(2.0_rk* sqrt(2.0_rk)))), Tprime
     write(*,*) z, eps, Tprime
   end do
 !  nit = 1

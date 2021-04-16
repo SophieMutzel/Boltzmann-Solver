@@ -384,4 +384,5 @@ module module_rhs
     include "region3aeq.f90"
     include "region3a_in_n.f90"
     include "RK4.f90"
+    include "rhs_contributions_in_n.f90"
 end module
