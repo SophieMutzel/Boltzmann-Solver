@@ -21,6 +21,8 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
   !Tprim(:) = Ta(T,params)!sqrt(params%gaff) * Ta(T,params)
   !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
   Tprim = q(3,:)
+  ! Hubble function
+  H = Hub( T, rhoeq(Tprim(1),mx,gDM)+rhoeq(Tprim(1),params%ma,ga), params )
   ! HS interaction
   do i=1,params%N
     ! DM axion interaction
@@ -41,7 +43,6 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
     neqazp(i) = neq(Tprim(i), params%ma, ga)!neq(sqrt(params%gaff(i))*Ta(T,params), params%ma, ga)
   end do
   s = ent( T, params )
-  H = Hub( T, params )
 
   rhs(1,:) = lz
   rhs(2,:) = Tprim!sqrt(params%gaff)*Ta(T,params)

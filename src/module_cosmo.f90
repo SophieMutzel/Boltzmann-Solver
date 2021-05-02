@@ -15,12 +15,15 @@ module module_cosmo
         return
     end function Hub_old
 
-    real(kind=rk) function Hub( T, params )
+    real(kind=rk) function Hub( T, rhoHS, params )
       implicit none
-        real(kind=rk), intent(in)           :: T
+        real(kind=rk), intent(in)           :: T, rhoHS
         type (type_params), intent(in)      :: params
+        real(kind=rk)                       :: rhoSM
 
-        Hub = 2.0_rk/3.0_rk*sqrt(pi*geff(T,params)/5.0_rk) * pi * T*T / Mpl
+        rhoSM = geff(T,params)*pi*pi/30.0_rk*T*T*T*T
+        Hub = sqrt(pi*(rhoSM+rhoHS)*8.0_rk/3.0_rk) / Mpl
+        !Hub = 2.0_rk/3.0_rk*sqrt(pi*geff(T,params)/5.0_rk) * pi * T*T / Mpl
     end function Hub
 
 
@@ -35,9 +38,7 @@ module module_cosmo
     real(kind=rk) function neq( T, m, g )
       implicit none
       real(kind=rk), intent(in)           :: T, m, g
-
-      neq = 0.5_rk * g * T * m*m * bessK2(m/T) /pi/pi
-
+        neq = 0.5_rk * g * T * m*m * bessK2(m/T) /pi/pi
     end function neq
 
     real(kind=rk) function rhoeq( T, m, g )

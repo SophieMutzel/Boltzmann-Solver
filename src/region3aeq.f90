@@ -20,9 +20,14 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
   ma = params%ma
   T = mx/10**lz
   s = ent( T, params )
-  H = Hub( T, params )
-  !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
   Tp(:) = q(3,:)!Ta(T,params)
+  ! rho,eq,a(T')
+  rhoeqaTp = rhoeq(Tp(1),ma,ga)
+  ! rhoeq,DM(T')
+  rhoeqDMTp = rhoeq(Tp(1),mx,gDM)
+  ! Hubble function
+  H = Hub( T, rhoeqaTp+rhoeqDMTp, params )
+  !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
   do i=1,params%N
     ! HS interaction
     argsint%g = params%gaxx(i)
@@ -44,7 +49,8 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
     ! neq,a(z')
     neqazp(i) = neq(Tp(i), params%ma, ga)
   end do
-
+  ! derivative of entropy with respect to T
+  ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
   ! DM
   !rhs(1,:) =  (sv_aaxx*neqazp*neqazp*(1.0_rk-q(1,:)*q(1,:)/neqzp/neqzp*s*s)/H/s)
   ! axion
@@ -84,8 +90,6 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
       rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + rhoeqDMTp + peqaTp + peqDMTp ) - params%gaff(i)*params%gaff(i)*drhoa/H )&
                 /(drhoeq(Tp(i),mx,gDM)+drhoeq(Tp(i),ma,ga))
     else
-      ! derivative of entropy with respect to T
-      ds = 2.0_rk/15.0_rk*pi*pi*T*T*heff(T,params)+2.0_rk/45.0_rk*pi*pi*T*T*T*0.5_rk*(heff(T+dT, params)-heff(T-dT, params))/dT
       ! rho = rhoeq(T')/neq(T')*s*Y
       ! p = peq(T')/neq(T')*s*Y=T'*s*Y for MB
       ! both rho/n(T')

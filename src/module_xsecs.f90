@@ -105,6 +105,63 @@ contains
                 (16.0_rk*pi*(mfsq-s)*(mfsq-s)*(mfsq-s)*s*s*&
                 (masq*masq-2.0_rk*masq*mfsq+mfsq*mfsq-2.0_rk*masq*s-2.0_rk*mfsq*s+s*s))
     return
-end function sigma_afgf
+  end function sigma_afgf
 
+  real(kind=rk) function sigma_agff_th(s, mfi, ma, mg, gaff)
+    implicit none
+    real(kind=rk), intent(in)         :: s, mfi, ma, mg, gaff
+    real(kind=rk)                     :: masq, mfsq, mgsq
+
+    masq = ma*ma
+    mfsq = mfi*mfi
+    mgsq = mg*mg
+    sigma_agff_th = 8.0_rk*pi*mfsq*gaff*gaff*((Sqrt(s*(-4.0_rk*mfsq + s))* &
+                  (-((masq*(mgsq +2.0_rk* mfsq)*(-s**(1.5_rk)*Sqrt(-4.0_rk* mfsq + s) + (masq + mgsq)*&
+                  Sqrt(s*(-4.0_rk*mfsq +s))))/((masq - mgsq)*(masq - mgsq)*mfsq + masq*mgsq*s -&
+                  2.0_rk* (masq + mgsq)*mfsq*s + mfsq*s*s)) - ((masq*masq -&
+                  4.0_rk* masq*mfsq + (mgsq - s)*(mgsq - s))*Log(((masq + mgsq - s)*&
+                  Sqrt(s) - Sqrt(-4.0_rk* mfsq + s)*Sqrt(masq*masq + (mgsq - s)*(mgsq - s) -&
+                  2.0_rk* masq*(mgsq + s)))/((masq + mgsq - s)*Sqrt(s) +&
+                  Sqrt(-4.0_rk* mfsq + s)*Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s)))))&
+                  /Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))/(16.0_rk *pi*pi*&
+                  Sqrt(1.0_rk - (4.0_rk* mfsq)/s)*(masq + mgsq - s)*s*&
+                  Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))
+    return
+  end function sigma_agff_th
+
+  real(kind=rk) function sigma_afgf_th(s, mfi, ma, mg, gaff)
+    implicit none
+    real(kind=rk), intent(in)         :: s, mfi, ma, mg, gaff
+    real(kind=rk)                     :: masq, mfsq, mgsq
+
+    masq = ma*ma
+    mfsq = mfi*mfi
+    mgsq = mg*mg
+    sigma_afgf_th = -2.0_rk*4.0_rk*pi*mfsq*gaff*gaff*(1.0_rk/&
+                    (64.0_rk* pi*pi* (mfsq - s)*(mfsq - s))*&
+                    ((Sqrt(mgsq*mgsq + (mfsq - s)*(mfsq - s) - 2.0_rk* mgsq*(mfsq + s))&
+                    *(mfsq*(mfsq - s)**4*(mgsq - mfsq + 3.0_rk* s) -&
+                    masq*masq*masq* mgsq*(mfsq + s)*(mgsq - mfsq + 3.0_rk* s) +&
+                    masq* (mfsq - s)*(mfsq - s)*(mgsq*mgsq*mgsq + mfsq*mfsq*mfsq - &
+                    2.0_rk*mfsq*mfsq*s - 7.0_rk*mfsq*s*s +&
+                    2.0_rk* mgsq*mgsq*(-2.0_rk* mfsq + s) + &
+                    mgsq*(mfsq - 5.0_rk*s)*(2.0_rk* mfsq + s)) -&
+                    masq*masq*mgsq*(mgsq - mfsq + 3.0_rk* s)*(mgsq*(mfsq + s) -&
+                    2.0_rk* (2.0_rk* mfsq*mfsq + mfsq*s + s*s))))/&
+                    (s*s*Sqrt(masq*masq + (mfsq - s)*(mfsq - s) -&
+                    2.0_rk* masq*(mfsq + s))*(masq*masq*mgsq +&
+                    masq*mgsq*(mgsq - 3.0_rk* mfsq - s) + &
+                    (mfsq*mfi - mfi*s)*(mfsq*mfi - mfi*s))) +&
+                    1.0_rk/(masq*masq + (mfsq - s)*(mfsq - s) &
+                    - 2.0_rk* masq*(mfsq + s))*&
+                    2.0_rk* (mfsq - s)*(2.0_rk* masq*masq + (mfsq - s)*(mfsq - s) -&
+                    2.0_rk* masq*(mfsq + s))*(Log((ma - mfi)*(mg - mfi)*(ma + mfi)*(mg + mfi) + (masq +&
+                    mgsq)*s - s*s - Sqrt(masq*masq + (mfsq - s)*(mfsq - s)&
+                     - 2.0_rk* masq*(mfsq + s))*Sqrt(&
+                    mgsq*mgsq + (mfsq - s)*(mfsq - s) - 2.0_rk* mgsq*(mfsq + s))) -&
+                    Log((ma - mfi)*(mg - mfi)*(ma + mfi)*(mg + mfi) + (masq + mgsq)*s - s*s +&
+                    Sqrt(masq*masq + (mfsq - s)*(mfsq - s) - 2.0_rk* masq*(mfsq + s))*Sqrt(&
+                    mgsq*mgsq + (mfsq - s)*(mfsq - s) - 2.0_rk* mgsq*(mfsq + s))))))
+    return
+  end function sigma_afgf_th
 end module

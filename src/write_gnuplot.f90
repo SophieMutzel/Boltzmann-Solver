@@ -18,7 +18,7 @@ subroutine write_gnuplot(unit_number, filename, Yobs)
     write(unit_number,*) "set yrange[1e-15:1e3]"
     write(unit_number,*) "set grid ytics lc rgb '#bbbbbb' lw 1 lt 0"
     write(unit_number,*) "set grid xtics lc rgb '#bbbbbb' lw 1 lt 0"
-    write(unit_number,*) "load 'gnuplot-palettes-master/set1.pal'"
+    write(unit_number,*) "load 'gnuplot-palettes-master/dark2.pal'"
     write(unit_number,*) "plot '", filename,".txt' using 1:2  with lines ls   1 dashtype 2 title '$Y_\chi(T)$' , \"
     write(unit_number,*) "'", filename, ".txt' using 1:3  with lines ls   2 dashtype 2 title '$Y_a(T)$' , \"
     write(unit_number,*) "'", filename, ".txt' using 1:4  with lines ls   3 title '$Y_{\chi,eq}(T)$' , \"

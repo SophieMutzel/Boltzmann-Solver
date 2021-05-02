@@ -182,8 +182,8 @@ module module_rhs
       real(kind=rk)                         :: mx, result, epsabs, epsrel, abserr,ma,alphas
       integer(kind=ik)                      :: i, ier, neval, nd
 
-      epsabs = 1e-20_rk
-      epsrel = 1e-5_rk
+      epsabs = 1e-30_rk
+      epsrel = 1e-10_rk
       mx = params%mx
       ma = params%ma
       argsint%T=T

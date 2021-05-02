@@ -53,24 +53,25 @@ program main
   dz = params%dz
   z  = params%z_start
   it = 0
-  do while ( z <= params%z_max)
-!    !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),z,test,nd-1,params%A,params%B)
-    zpdz = z +params%dz_plot
-    T = params%mx/10**z
-!    test = geff_rho(T)
-!    call geffSM(T,params,Tprime)
-    !Tprime = Ta(T,params)
-    ! HS interaction
-    !argsint%g = params%gaxx(1)
-    !call sigmav( Tprime, params, argsint, "aaxx", test )
-!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
-!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
-    z = zpdz
-    !write(*,*) z, test, Hub( T, params ), ent( T, params )
-    call sigmav( T, params, argsint, "aaxx", test )
-    write(*,*) z, T,  test
-  end do
-stop
+!  do while ( z <= params%z_max)
+!!    !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),z,test,nd-1,params%A,params%B)
+!    zpdz = z +params%dz_plot
+!    T = params%mx/10**z
+!!    test = geff_rho(T)
+!!    call geffSM(T,params,Tprime)
+!    !Tprime = Ta(T,params)
+!    ! HS interaction
+!    !argsint%g = params%gaxx(1)
+!    !call sigmav( Tprime, params, argsint, "aaxx", test )
+!!    !test = 2.46743 - 0.900703 *z - 0.426853 *z**2 + 0.344933 *z**3 + 0.241269 *z**4 - 1.64352 *tanh(2.49447*z)
+!!    !call interp_linear(size(x_eval), x_eval,y_eval,z,test)!log10(Tprime), test)
+!    z = zpdz
+!    !write(*,*) z, test, Hub( T, params ), ent( T, params )
+!    argsint%g = params%gaxx(1)
+!    call sigmav( T, params, argsint, "aaxx", test )
+!    write(*,*) z, T,  test
+!  end do
+!stop
   if (rank==0) then
     write(*,'(80("_"))')
     write(*,*) "starting main time loop"
@@ -84,7 +85,7 @@ stop
                     !METHOD_FLAG=25,LOWER_BANDWIDTH=nrhs-1, UPPER_BANDWIDTH=nrhs-1,RELERR=rtol,ABSERR=atol )
   !options = set_opts( METHOD_FLAG=25, BANDED_J = .true.,USER_SUPPLIED_JACOBIAN= .false.,&
                     !  RELERR=rtol,ABSERR=atol, LOWER_BANDWIDTH=nrhs-1, UPPER_BANDWIDTH=nrhs-1 )
-  OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=dz,HMAX=0.0001_rk,MXSTEP=10000)
+  OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=dz,HMAX=0.0001_rk,MXSTEP=100000)
   itask = 1
   istate = 1
   allocate(Y(nrhs*params%N))
@@ -95,12 +96,6 @@ stop
 
   eps = 1.0_rk
   conv_eps = 1e-3_rk
-!  allocate(x_eval((nd-1)*4),y_eval((nd-1)*4))
-!  call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),x_eval,y_eval,nd-1,4,params%A,params%B)
-!  do i=1,(nd-1)*4
-!    write(*,*) x_eval(i), y_eval(i)
-!  end do
-!stop
   z  = params%z_start
   do while ( z <= params%z_max .and. eps > conv_eps .or. z<=0.0_rk)
     it = it + 1
@@ -115,8 +110,6 @@ stop
     s = ent(T,params)
     q_tot(1,:,it) = z
     q_tot(2:nrhs,:,it) = q_new(1:2,:)/s
-    !Tprime=Tanew(T,params,q_new(3,:),q_new(1,:)/neq(T,params%mx,gDM)*s*rhoeq(T,params%mx,gDM))
-    !Tprime = Ta(T,params)
     Tprime = q_new(3,1)
     q_tot(nrhs+1,:,it) = neq(T, params%mx, gDM)/s
     do i=1,params%N
@@ -126,8 +119,6 @@ stop
     q_tot(nrhs+4,:,it) = Tprime!params%mx/(sqrt(params%gaff)*Tprime)
 
     eps = max(abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it-1)),abs((q_tot(3,1,it)-q_tot(3,1,it-1))/q_tot(3,1,it-1)))
-    !if (z>1.0_rk ) write(*,*) z, q_new(1,1)/(exp(-params%mx/Tprime)*(gDM*(params%mx*Tprime/pi)**(1.5_rk)/(2.0_rk* sqrt(2.0_rk)))),&
-    !                q_new(2,1)/(exp(-params%ma/Tprime)*(ga*(params%ma*Tprime/pi)**(1.5_rk)/(2.0_rk* sqrt(2.0_rk)))), Tprime
     write(*,*) z, eps, Tprime
   end do
 !  nit = 1
