@@ -5,7 +5,9 @@ module module_utils
 
   implicit none
   type, public :: type_argsint
-    real(kind=rk)                     :: T, mf, nc, mx, ma, g
+    real(kind=rk)                     :: T, mf, nc, mx, ma, g, mg
+    real(kind=rk), allocatable        :: drhoa(:,:)
+    logical                           :: helper
   end type type_argsint
 
   contains
@@ -312,6 +314,50 @@ module module_utils
 
     end subroutine test_bezier
 
+    real(kind=rk) function alpha_s(mu)
+      implicit none
+      real(kind=rk), intent(in)     :: mu
+      real(kind=rk)                 :: nf, Lambda, lmulambda, beta0, beta1, beta2
+
+      if (mu<1.67_rk) then
+        nf = 3.0_rk
+        Lambda = 0.372_rk
+      else
+        if (mu<4.8_rk) then
+          nf = 4.0_rk
+          Lambda = 0.325_rk
+        else
+          if (mu<173_rk) then
+            nf = 5.0_rk
+            Lambda = 0.226_rk
+          else
+            nf = 6.0_rk
+            Lambda = 0.092_rk
+          end if
+        end if
+      end if
+      lmulambda = log(mu*mu/Lambda/Lambda)
+      beta0 = 11.0_rk-2.0_rk*nf/3.0_rk
+      beta1 = 102.0_rk-38.0_rk*nf/3.0_rk
+      beta2 = 2857.0_rk/2.0_rk-5033.0_rk*nf/18.0_rk+325.0_rk*nf*nf/54.0_rk
+      alpha_s = 4.0_rk*pi/(beta0*lmulambda)*&
+                (1.0_rk-beta1/beta0/beta0*log(lmulambda)/&
+                lmulambda+beta1*beta1/(beta0*beta0*beta0*beta0*&
+                lmulambda*lmulambda)*((log(lmulambda)-0.5_rk)*(log(lmulambda)-0.5_rk)&
+                +beta2*beta0/beta1/beta1-5.0_rk/4.0_rk))
+    end function alpha_s
+
+    real(kind=rk) function alpha_qed_th(mu)
+      implicit none
+      real(kind=rk), intent(in)     :: mu
+      real(kind=rk)                 :: alphaMZ, MZ, beta0
+
+      beta0=-4.0_rk/3.0_rk
+      MZ = 91.1876_rk
+      alphaMZ = 1.0_rk/128.962_rk
+      alpha_qed_th = alphaMZ/(1.0_rk+2.0_rk*beta0*alphaMZ/(4.0_rk*pi)*Log(mu/MZ))
+
+    end function alpha_qed_th
 !    subroutine test_bezier(x,y,x_eval,y_eval,n,nvals)
 !      implicit none
 !      real(kind=rk), intent(in)     :: x(:),y(:)

@@ -155,13 +155,41 @@ contains
                     1.0_rk/(masq*masq + (mfsq - s)*(mfsq - s) &
                     - 2.0_rk* masq*(mfsq + s))*&
                     2.0_rk* (mfsq - s)*(2.0_rk* masq*masq + (mfsq - s)*(mfsq - s) -&
-                    2.0_rk* masq*(mfsq + s))*(Log((ma - mfi)*(mg - mfi)*(ma + mfi)*(mg + mfi) + (masq +&
+                    2.0_rk* masq*(mfsq + s))*Log(((ma - mfi)*(mg - mfi)*(ma + mfi)*(mg + mfi) + (masq +&
                     mgsq)*s - s*s - Sqrt(masq*masq + (mfsq - s)*(mfsq - s)&
                      - 2.0_rk* masq*(mfsq + s))*Sqrt(&
-                    mgsq*mgsq + (mfsq - s)*(mfsq - s) - 2.0_rk* mgsq*(mfsq + s))) -&
-                    Log((ma - mfi)*(mg - mfi)*(ma + mfi)*(mg + mfi) + (masq + mgsq)*s - s*s +&
+                    mgsq*mgsq + (mfsq - s)*(mfsq - s) - 2.0_rk* mgsq*(mfsq + s)))/&
+                    ((ma - mfi)*(mg - mfi)*(ma + mfi)*(mg + mfi) + (masq + mgsq)*s - s*s +&
                     Sqrt(masq*masq + (mfsq - s)*(mfsq - s) - 2.0_rk* masq*(mfsq + s))*Sqrt(&
                     mgsq*mgsq + (mfsq - s)*(mfsq - s) - 2.0_rk* mgsq*(mfsq + s))))))
+
     return
   end function sigma_afgf_th
+
+  real(kind=rk) function M2ffa(mfi, ma)
+    implicit none
+    real(kind=rk)           :: mfi, ma
+
+    M2ffa =  mfi*mfi*ma*ma*2.0_rk
+    return
+  end function M2ffa
+
+  real(kind=rk) function Gamma_ffa(mfi, ma)
+    implicit none
+    real(kind=rk)           :: mfi, ma
+
+    Gamma_ffa = ma*mfi*mfi/(8.0_rk*pi)*sqrt(1.0_rk-4.0_rk*mfi*mfi/ma/ma)
+    return
+  end function Gamma_ffa
+
+
+!  real(kind=rk) function Mgga()
+!    implicit none
+!
+!    Mgga = 2.0_rk/pi/pi*ma*ma*ma*ma*
+!    Total[mFin[[1, 1, All]]^2 ncf[[1, All]] qf^2 Table[
+!2 Abs[ArcSin[Sqrt[ma^2/(4*mFin[[1, 1, i]]^2)]]^2]/ma^2, {i, 1,
+!Length[mFin[[1, 1, All]]]}]]^2
+!
+!  end function Mgga
 end module

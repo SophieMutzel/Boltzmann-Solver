@@ -22,7 +22,7 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
   !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
   Tprim = q(3,:)
   ! Hubble function
-  H = Hub( T, rhoeq(Tprim(1),mx,gDM)+rhoeq(Tprim(1),params%ma,ga), params )
+  H = Hub( T, rhoeq(Tprim(1),mx,gDM)+rhoeq(Tprim(1),params%ma,ga) )
   ! HS interaction
   do i=1,params%N
     ! DM axion interaction

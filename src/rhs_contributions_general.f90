@@ -1,4 +1,4 @@
-subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
+subroutine rhs_contributions_general( N, lz, Y, params, argsint, rhs )
   implicit none
   real(kind=rk), intent(in)                   :: lz
   real(kind=rk), dimension(N), intent(in)     :: Y
@@ -6,7 +6,6 @@ subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
   type (type_params), intent(in)              :: params
   type (type_argsint), intent(inout)          :: argsint
   integer(kind=ik), intent(in)                :: N
-  character(len=*), intent(in)                :: regime
   real(kind=rk), dimension(nrhs,params%N)     :: q
   real(kind=rk)                               :: mx, T, mf, nc, ma, H
   real(kind=rk)                               :: result
@@ -21,15 +20,17 @@ subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
   mx = params%mx
   ma = params%ma
   T = mx/10**lz
-  select case (regime)
-  case("reann")
+  select case (params%regime)
+  case("reannihilation")
     Tp = q(nrhs,:)
-  case("fo")
+  case("freeze-out")
     Tp(:) = T
-  case("fi")
-    Tp = q(nrhs,:)
+  case("freeze-in")
+    Tp = T
+  case("seq-freeze-in")
+    Tp(:) = T
   case default
-    write(*,*) "Error! Regime ", regime, " not (yet) implemented!"
+    write(*,*) "Error! Regime ", params%regime, " not (yet) implemented!"
   end select
   argsint%T = T
   ! rho,eq,a(T')
@@ -60,8 +61,6 @@ subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
 
     ffa(i) = gammav(T, params, "affth")*params%gaff(i)*params%gaff(i)
-    !ffa(i) = gammav(T, params, "aff")*params%gaff(i)*params%gaff(i)
-    !ffa(i) = 0.0_rk
   end do
   ! Y_x
   do i=1,params%N
@@ -70,24 +69,11 @@ subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
   end do
   rhs(1,:) = lz
   rhs(2,:) = Tp
-  rhs(3,:) = l10*(sv_xxaa*(q(1,:)*q(1,:)))/H!+neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:))/H))!abs(l10*(sv_xxaa*(-q(1,:)*q(1,:)+neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:))/H))
+  rhs(3,:) = l10*(sv_xxaa*(q(1,:)*q(1,:)))/H
   rhs(4,:) = l10*(gam_xxff)/H
   rhs(5,:) = l10*3.0_rk*q(1,:)
   rhs(6,:) = l10*3.0_rk*q(2,:)
   rhs(7,:) = l10*(gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H
 
-  nd = size(params%drhoa,2)
-  call interp_linear(nd, params%drhoa(1,:),params%drhoa(2,:),log10(T), drhoa)
-  !drhoa = drhoa -  drho_decay(T, params%ma, "ffath")
 
-  write(*,*) lz, T, drhoa, drho_decay(T, params%ma, "ffath")
-
-  !write(*,*) lz, Tp, q(1,:)*q(1,:), neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:),l10*3.0_rk*q(1,:),l10*(sv_xxaa*(-q(1,:)*q(1,:)+neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:))/H)
-  !write(*,*) lz, l10*sv_xxaa*q(1,:)*q(1,:)/H, l10*sv_aaxx* q(2,:)*q(2,:)/H
-!  l10*3.0_rk*(rhoeqneq(Tp(1),ma)*q(2,1)),l10*3.0_rk*(rhoeqneq(Tp(1),mx)*q(1,1)), &
-!  rhoeqneq(Tp(1),ma)*rhs_a,rhoeqneq(Tp(1),mx)*rhs_DM, &
-!  q(1,1)*drhoeqneq( Tp(1), mx ), q(2,1)*drhoeqneq( Tp(1), ma ), l10*rhoplusp+rhoeqneq(Tp(1),ma)*rhs_a,&
-!  l10*sv_xxaa*q(1,:)*q(1,:)/H,l10*sv_aaxx*q(2,:)*q(2,:)/H
-
-
-end subroutine rhs_contributions_in_n
+end subroutine rhs_contributions_general

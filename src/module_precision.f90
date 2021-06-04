@@ -16,9 +16,10 @@ module module_precision
   real(kind=rk), parameter, public   :: alpha_QED = 1.0_rk/137.0_rk
   real(kind=rk), parameter, public   :: Mpl = 1.22e19_rk
   real(kind=rk), parameter, public   :: Yxmxobs = 2.045e-10_rk
+  real(kind=rk), parameter, public   :: QCDcut = 0.6_rk
 
   ! number of rhs
-  integer(kind=ik), parameter, public :: nrhs = 3
+  integer(kind=ik), public :: nrhs != 3
 
   contains
   !initialize global communicator of MPI_World

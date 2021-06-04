@@ -14,7 +14,7 @@ subroutine write_gnuplot_rhs(unit_number, filename)
     write(unit_number,*)  "set ylabel 'rhs'"
     write(unit_number,*)  "set key font ',1'"
     write(unit_number,*)  "set logscale y"
-    write(unit_number,*)  "set yrange[1e-15:1e5]"
+    write(unit_number,*)  "set yrange[1e-10:1e5]"
     write(unit_number,*)  "set grid ytics lc rgb '#bbbbbb' lw 1 lt 0"
     write(unit_number,*)  "set grid xtics lc rgb '#bbbbbb' lw 1 lt 0"
     write(unit_number,*)  "load 'gnuplot-palettes-master/dark2.pal'"

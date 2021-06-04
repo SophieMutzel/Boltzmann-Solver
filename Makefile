@@ -46,10 +46,22 @@ FFLAGS += -module $(OBJDIR) # specify directory for modules.
 #LDFLAGS = -L/usr/X11/lib/ -lX11 #-L/usr/lib64/lapack -llapack
 endif
 
-all: directories boltzmann
+all: directories boltzmann general#freeze_out freeze_in
 
 # Compile main programs, with dependencies.
 boltzmann: main.f90 $(MOBJS) $(OBJS)
+	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
+
+# Compile main programs, with dependencies.
+general: boltzmann_general.f90 $(MOBJS) $(OBJS)
+	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
+
+# Compile main programs, with dependencies.
+freeze_out: freeze_out.f90 $(MOBJS) $(OBJS)
+	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
+
+# Compile main programs, with dependencies.
+freeze_in: freeze_in.f90 $(MOBJS) $(OBJS)
 	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
 
 # Compile modules (module dependency must be specified by hand in
@@ -61,7 +73,7 @@ $(OBJDIR)/f90getopt.o: f90getopt.f90
 		$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_read_write.o: module_read_write.f90 $(OBJDIR)/module_precision.o \
-	write_gnuplot.f90 write_gnuplot_rhs.f90
+	write_gnuplot.f90 write_gnuplot_rhs.f90 write_gnuplot_fo.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_utils.o: module_utils.f90 $(OBJDIR)/module_precision.o \
@@ -73,7 +85,7 @@ $(OBJDIR)/module_params.o: module_params.f90 $(OBJDIR)/module_precision.o $(OBJD
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_cosmo.o: module_cosmo.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o $(OBJDIR)/module_dof.o \
-	initial_conditions.f90
+	HS_temperature.f90 maxwell_boltzmann.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_utils.o
@@ -81,7 +93,10 @@ $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR
 
 $(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
 	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o \
-	RK4.f90 rhs_contributions.f90 region3aeq.f90 region3a_in_n.f90 rhs_contributions_in_n.f90
+	RK4.f90 rhs_contributions.f90 region3aeq.f90 region3a_in_n.f90 rhs_contributions_in_n.f90 \
+	sm_alps.f90 HS_interaction.f90 thermal_masses.f90 initial_conditions.f90 rhop_over_rho.f90 \
+	region_freeze_out.f90 region_freeze_out_coupled.f90 region_freeze_in.f90 choose_regime.f90 \
+	rhs_contributions_general.f90 general_rhs.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/dvode.o: dvode.f90  $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o

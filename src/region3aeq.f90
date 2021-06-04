@@ -26,7 +26,7 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
   ! rhoeq,DM(T')
   rhoeqDMTp = rhoeq(Tp(1),mx,gDM)
   ! Hubble function
-  H = Hub( T, rhoeqaTp+rhoeqDMTp, params )
+  H = Hub( T, rhoeqaTp+rhoeqDMTp )
   !Tprim(:) = Tanew(T,params,q(3,:),q(1,:)/neq(T,mx,gDM)*s*rhoeq(T,mx,gDM))
   do i=1,params%N
     ! HS interaction

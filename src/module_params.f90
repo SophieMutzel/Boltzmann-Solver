@@ -13,6 +13,9 @@ module module_params
     ! masses
     real(kind=rk)                                :: mx = 25.0_rk, ma = 5.0_rk
 
+    ! regime
+    character(len=14)                            :: regime
+
     ! loop coefficient
     real(kind=rk)                                :: C0sq
 
@@ -41,9 +44,6 @@ module module_params
 
     ! in Mathematica calculated rhoa/rho
     real(kind=rk), dimension(:,:), allocatable   :: rhoa_rho
-
-    ! running of strong coupling alpha_s
-    real(kind=rk), dimension(:,:), allocatable   :: alpha_s
 
     ! process rank
     integer(kind=ik)                            :: rank = -1
