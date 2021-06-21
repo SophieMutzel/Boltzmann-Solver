@@ -36,12 +36,12 @@ subroutine region3a_eq( N, lz, Y, Ynew, params, argsint )
 
     ! SM axion interaction
     argsint%g = params%gaff(i)
-    call gamma_r_new( T, params, argsint, "agff", gam_agff(i) )
-    call gamma_r_new( T, params, argsint, "afgf", gam_afgf(i) )
+    call gamma_r_new( T, argsint, "agff", gam_agff(i) )
+    call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
 
     ! SM DM interaction
     ! argsint%g = params%gaxx(i)*params%gaff(i)
-    !call gamma_r_new( T, params, argsint, "xxff", gam_xxff(i) )
+    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
   end do
   do i=1,params%N
     ! neq,DM(z')

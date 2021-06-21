@@ -1,7 +1,12 @@
 real(kind=rk) function neq( T, m, g )
   implicit none
   real(kind=rk), intent(in)           :: T, m, g
+!  if (T/m>0.03_rk) then
     neq = 0.5_rk * g * T * m*m * bessK2(m/T) /pi/pi
+!  else
+!    neq = exp(-m/T)* g*(sqrt(m*m*m*T*T*T/2.0_rk/pi/pi/pi)/2.0_rk +&
+!                  15.0_rk *sqrt(m*T*T*T*T*T*pi*pi*pi/2.0_rk)/16.0_rk)
+! end if
 end function neq
 
 real(kind=rk) function rhoeq( T, m, g )

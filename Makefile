@@ -94,7 +94,7 @@ $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR
 $(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
 	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o \
 	RK4.f90 rhs_contributions.f90 region3aeq.f90 region3a_in_n.f90 rhs_contributions_in_n.f90 \
-	sm_alps.f90 HS_interaction.f90 thermal_masses.f90 initial_conditions.f90 rhop_over_rho.f90 \
+	sm_alps.f90 HS_interaction.f90 thermal_masses.f90 initial_conditions.f90 initial_integrals.f90 \
 	region_freeze_out.f90 region_freeze_out_coupled.f90 region_freeze_in.f90 choose_regime.f90 \
 	rhs_contributions_general.f90 general_rhs.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
@@ -110,7 +110,7 @@ $(OBJDIR)/%.o: %.f90 $(MOBJS)
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 clean:
-	rm -rf $(PROGRAMS) $(OBJDIR) a.out boltzmann
+	rm -rf $(PROGRAMS) $(OBJDIR) a.out boltzmann general freeze_out freeze_in
 
 # If the object directory doesn't exist, create it.
 .PHONY: directories

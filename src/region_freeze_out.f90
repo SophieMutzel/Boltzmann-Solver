@@ -34,11 +34,11 @@ subroutine region_freeze_out( N, lz, Y, Ynew, params, argsint )
     call sigmav( T, params, argsint, "aaxx", sv_aaxx(i) )
     sv_aaxx(i) = sv_aaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
 
-    !call gamma_r_new( T, params, argsint, "afgf", gam_afgf(i) )
+    !call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
     ! SM DM interaction
     ! argsint%g = params%gaxx(i)*params%gaff(i)
-    call gamma_r_new( T, params, argsint, "xxffth", gam_xxff(i) )
-    !call gamma_r_new( T, params, argsint, "xxff", gam_xxff(i) )
+    call gamma_r_new( T, argsint, "xxffth", gam_xxff(i) )
+    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
 
   end do

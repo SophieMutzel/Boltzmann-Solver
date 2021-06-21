@@ -49,18 +49,18 @@ subroutine rhs_contributions_general( N, lz, Y, params, argsint, rhs )
     sv_xxaa(i) = sv_xxaa(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
     ! SM axion interaction
     !argsint%g = params%gaff(i)
-    call gamma_r_new( T, params, argsint, "agffth", gam_agff(i) )
-    !call gamma_r_new( T, params, argsint, "agff", gam_agff(i) )
+    call gamma_r_new( T, argsint, "agffth", gam_agff(i) )
+    !call gamma_r_new( T, argsint, "agff", gam_agff(i) )
     gam_agff(i) = gam_agff(i)*params%gaff(i)*params%gaff(i)
     gam_afgf(i) = 0.0_rk
-    !call gamma_r_new( T, params, argsint, "afgf", gam_afgf(i) )
+    !call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
     ! SM DM interaction
     !argsint%g = params%gaxx(i)*params%gaff(i)
-    call gamma_r_new( T, params, argsint, "xxffth", gam_xxff(i) )
-    !call gamma_r_new( T, params, argsint, "xxff", gam_xxff(i) )
+    call gamma_r_new( T, argsint, "xxffth", gam_xxff(i) )
+    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
 
-    ffa(i) = gammav(T, params, "affth")*params%gaff(i)*params%gaff(i)
+    ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
   end do
   ! Y_x
   do i=1,params%N

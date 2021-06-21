@@ -9,9 +9,9 @@ module module_rhs
 
   contains
 
-    real(kind=rk) function gammav(T, params, Gamma)
+    real(kind=rk) function gammav(T, argsint, Gamma)
       implicit none
-      type (type_params), intent(in)        :: params
+      type (type_argsint), intent(in)       :: argsint
       real(kind=rk), intent(in)             :: T
       character(len=*), intent(in)          :: Gamma
       real(kind=rk)                         :: mfi
@@ -22,28 +22,28 @@ module module_rhs
         case("affth")
           do i=1, 3
             mfi = ml_th(T,mf(i),qf(i))
-            if (2.0_rk*mfi<params%ma) then
-              gammav = gammav + Gamma_ffa(mfi,params%ma)
+            if (2.0_rk*mfi<argsint%ma) then
+              gammav = gammav + Gamma_ffa(mfi,argsint%ma)
             end if
           end do
           if (T>QCDcut) then
             do i=4,9
               mfi = mq_th(T,mf(i),qf(i))
-              if (2.0_rk*mfi<params%ma) then
-                gammav = gammav + Gamma_ffa(mfi,params%ma)
+              if (2.0_rk*mfi<argsint%ma) then
+                gammav = gammav + Gamma_ffa(mfi,argsint%ma)
               end if
             end do
           end if
         case("aff")
           do i=1, 3
-            if (2.0_rk*mf(i)<params%ma) then
-              gammav = gammav + Gamma_ffa(mf(i),params%ma)
+            if (2.0_rk*mf(i)<argsint%ma) then
+              gammav = gammav + Gamma_ffa(mf(i),argsint%ma)
             end if
           end do
           if (T>QCDcut) then
             do i=4,9
-              if (2.0_rk*mf(i)<params%ma) then
-                gammav = gammav + Gamma_ffa(mf(i),params%ma)
+              if (2.0_rk*mf(i)<argsint%ma) then
+                gammav = gammav + Gamma_ffa(mf(i),argsint%ma)
               end if
             end do
           end if
@@ -51,15 +51,14 @@ module module_rhs
           write(*,*) "Error! decay width ", Gamma, " not implemented"
         end select
 
-        if (T/params%ma>0.03_rk) then
-          gammav = gammav*bessK1(params%ma/T)/bessK2(params%ma/T)
+        if (T/argsint%ma>0.03_rk) then
+          gammav = gammav*bessK1(argsint%ma/T)/bessK2(argsint%ma/T)
         else
-          gammav = gammav*(1.0_rk-3.0_rk/2.0_rk*T/params%ma+15.0_rk*T*T/8.0_rk/params%ma/params%ma)
+          gammav = gammav*(1.0_rk-3.0_rk/2.0_rk*T/argsint%ma+15.0_rk*T*T/8.0_rk/argsint%ma/argsint%ma)
         end if
     end function gammav
-    subroutine gamma_r_new( T, params, argsint, sigma, gam )
+    subroutine gamma_r_new( T, argsint, sigma, gam )
       implicit none
-      type (type_params), intent(in)        :: params
       type (type_argsint), intent(inout)    :: argsint
       real(kind=rk), intent(in)             :: T
       character(len=*), intent(in)          :: sigma
@@ -69,8 +68,8 @@ module module_rhs
 
       epsabs = 1e-7_rk
       epsrel = 1e-2_rk
-      mx = params%mx
-      ma = params%ma
+      mx = argsint%mx
+      ma = argsint%ma
       gam = 0.0_rk
       if (T>QCDcut) then
         alphas = alpha_s(2.0_rk*pi*T)
@@ -406,7 +405,7 @@ module module_rhs
     include "thermal_masses.f90"
     include "HS_interaction.f90"
     include "initial_conditions.f90"
-    include "rhop_over_rho.f90"
+    include "initial_integrals.f90"
     include "region_freeze_out.f90"
     include "region_freeze_out_coupled.f90"
     include "region_freeze_in.f90"

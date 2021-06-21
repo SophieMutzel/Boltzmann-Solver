@@ -48,25 +48,33 @@ subroutine general_rhs( N, lz, Y, Ynew, params, argsint )
     sv_xxaa(i) = sv_xxaa(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
     ! SM axion interaction
     ! argsint%g = params%gaff(i)
-    call gamma_r_new( T, params, argsint, "agffth", gam_agff(i) )
-    call gamma_r_new( T, params, argsint, "agff", gam_agff(i) )
+    call gamma_r_new( T, argsint, "agffth", gam_agff(i) )
+    !call gamma_r_new( T, argsint, "agff", gam_agff(i) )
     gam_agff(i) = gam_agff(i)*params%gaff(i)*params%gaff(i)
     gam_afgf(i) = 0.0_rk
-    !call gamma_r_new( T, params, argsint, "afgf", gam_afgf(i) )
+    !call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
     ! SM DM interaction
     ! argsint%g = params%gaxx(i)*params%gaff(i)
-    call gamma_r_new( T, params, argsint, "xxffth", gam_xxff(i) )
-    !call gamma_r_new( T, params, argsint, "xxff", gam_xxff(i) )
+    call gamma_r_new( T, argsint, "xxffth", gam_xxff(i) )
+    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
     ! inverse decay ff->a
-    ffa(i) = gammav(T, params, "affth")*params%gaff(i)*params%gaff(i)
+    ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
     !ffa(i)=0.0_rk
   end do
 
   select case (params%regime)
   case ("reannihilation")
-    rhs(1,:) =  -l10*3.0_rk*q(1,:) + l10* ((-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx* q(2,:)*q(2,:))/H+ gam_xxff/H)
-    rhs(2,:) =  -l10*3.0_rk*q(2,:) + l10*(sv_xxaa*(q(1,:)*q(1,:)-neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:))/H+ (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H)
+!    if (Tp(1)>mx) then
+!      rhs(1,:) =  -l10*3.0_rk*q(1,:) + l10* ((-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx* q(2,:)*q(2,:))/H+ gam_xxff/H)
+!      !  !rhs(1,:) =  -l10*3.0_rk*q(1,:) + l10* (sv_aaxx*neqazp*neqazp*( 1.0_rk - q(1,:)*q(1,:)/neqzp/neqzp)/H+ gam_xxff/H)
+!      !  !rhs(2,:) =  -l10*3.0_rk*q(2,:) + l10*(sv_aaxx*neqazp*neqazp*(-1.0_rk+q(1,:)*q(1,:)/neqzp/neqzp)/H + (gam_agff + 2.0_rk*gam_afgf+ffa*neqazp)/H)
+!      rhs(2,:) =  -l10*3.0_rk*q(2,:) + l10*(sv_xxaa*neqzp*neqzp*(1.0_rk- q(2,:)*q(2,:)/neqazp/neqazp)/H+ (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H)
+!    else
+      rhs(1,:) =  -l10*3.0_rk*q(1,:) + l10* ((-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx* q(2,:)*q(2,:))/H+ gam_xxff/H)
+      rhs(2,:) =  -l10*3.0_rk*q(2,:) + l10*(sv_xxaa*(q(1,:)*q(1,:)-neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:))/H+ (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H)
+      !rhs(2,:) =  -l10*3.0_rk*q(2,:) + l10*((sv_xxaa*q(1,:)*q(1,:)-sv_aaxx* q(2,:)*q(2,:))/H+ (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H)
+!    end if
     do i = 1, params%N
       ! axions and DM in equilibrium and source term small
       if (Tp(i)>mx) then
@@ -105,10 +113,10 @@ subroutine general_rhs( N, lz, Y, Ynew, params, argsint )
                 !l10* ((-sv_xxaa*q(1,:)*q(1,:)+sv_aaxx*neqazp*neqazp)/H &
                 + gam_xxff*(1.0_rk - q(1,:)*q(1,:)/neqzp/neqzp)/H)
     ! axions
-    rhs(2,:) =  -l10*3.0_rk*q(2,:) !+ &
-                !l10* (sv_xxaa*( -q(2,:)*q(2,:)*neqzp*neqzp/neqazp/neqazp + q(1,:)*q(1,:))/H &
+    rhs(2,:) =  -l10*3.0_rk*q(2,:) + &
+                l10* (sv_xxaa*( -q(2,:)*q(2,:)*neqzp*neqzp/neqazp/neqazp + q(1,:)*q(1,:))/H &
                 !l10* ((-sv_aaxx*q(2,:)*q(2,:) + sv_xxaa*neqzp*neqzp)/H&
-                !+ gam_agff*(1.0_rk - q(2,:)*q(2,:)/neqazp/neqazp)/H + ffa*(neqazp-q(2,:))/H)
+                + gam_agff*(1.0_rk - q(2,:)*q(2,:)/neqazp/neqazp)/H + ffa*(neqazp-q(2,:))/H)
     rhs(3,:) = -l10*T
   case ("freeze-in")
     rhs(1,:) = -l10*3.0_rk*q(1,:) + l10*(sv_aaxx*neqazp*neqazp/H + gam_xxff/H)
@@ -118,22 +126,22 @@ subroutine general_rhs( N, lz, Y, Ynew, params, argsint )
   case ("seq-freeze-in")
     rhs(1,:) =  -l10*3.0_rk*q(1,:) + l10* (sv_aaxx*q(2,:)*q(2,:)/H + gam_xxff/H)
     rhs(2,:) =  -l10*3.0_rk*q(2,:) + l10*(-sv_aaxx*q(2,:)*q(2,:)/H+ (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H)
-    do i = 1, params%N
-      peqaTp = peq(Tp(i),ma,ga)
-    ! dT'/dlz
-      rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + peqaTp ) + params%gaff(i)*params%gaff(i)*drhoa/H )&
-              /(drhoeq(Tp(i),ma,ga))
-    end do
 !    do i = 1, params%N
-!      rhoeqneqDM = rhoeqneq(Tp(i),mx)
-!      rhoeqneqa = rhoeqneq(Tp(i),ma)
-!      ! both rho/n(T')
-!      rhoplusp = 3.0_rk*(rhoeqneqa*q(2,i) + Tp(i)*q(2,i) )
-!      ! both rho/n(T')
-!      rhs(3,i) = (l10*( -rhoplusp + params%gaff(i)*params%gaff(i)*drhoa/H) &
-!              - ( rhoeqneqa*rhs(2,i) )) &
-!              /( q(2,i)*drhoeqneq( Tp(i), ma ))
+!      peqaTp = peq(Tp(i),ma,ga)
+!    ! dT'/dlz
+!      rhs(3,i) = l10*( -3.0_rk * ( rhoeqaTp + peqaTp ) + params%gaff(i)*params%gaff(i)*drhoa/H )&
+!              /(drhoeq(Tp(i),ma,ga))
 !    end do
+    do i = 1, params%N
+      rhoeqneqDM = rhoeqneq(Tp(i),mx)
+      rhoeqneqa = rhoeqneq(Tp(i),ma)
+      ! both rho/n(T')
+      rhoplusp = 3.0_rk*(rhoeqneqa*q(2,i) + Tp(i)*q(2,i) )
+      ! both rho/n(T')
+      rhs(3,i) = (l10*( -rhoplusp + params%gaff(i)*params%gaff(i)*drhoa/H) &
+              - ( rhoeqneqa*rhs(2,i) )) &
+              /( q(2,i)*drhoeqneq( Tp(i), ma ))
+    end do
   case default
     write(*,*) "Regime ", params%regime, " not (yet) implemented."
   end select

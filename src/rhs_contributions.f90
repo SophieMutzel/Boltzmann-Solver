@@ -31,11 +31,11 @@ subroutine rhs_contributions( N, lz, Y, params, argsint, rhs )
     call sigmav( Tprim(i), params, argsint, "xxaa", sv_xxaa(i) )
     ! SM axion interaction
     argsint%g = params%gaff(i)
-    call gamma_r_new( T, params, argsint, "agff", gam_agff(i) )
-    call gamma_r_new( T, params, argsint, "afgf", gam_afgf(i) )
+    call gamma_r_new( T, argsint, "agff", gam_agff(i) )
+    call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
     ! SM DM interaction
     argsint%g = params%gaff(i)*params%gaxx(i)
-    call gamma_r_new( T, params, argsint, "xxff", gam_xxff(i) )
+    call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
   end do
   ! Y_x
   do i=1,params%N

@@ -17,9 +17,10 @@ program main
   real(kind=rk), allocatable           :: q_tot(:,:,:), rhs(:,:,:)
   integer(kind=ik)                     :: it, ierr, rank, nprocs, N,itask
   integer(kind=ik)                     :: io_error, istate, i, ier, neval, nit, nd,nsqrt,j,k
-  real(kind=rk)                        :: rtol, atol, helper, T, test, abserr, Tprime, s, ztest
+  real(kind=rk)                        :: rtol, atol, T, abserr, Tprime, s, eps_old
   real(kind=rk), allocatable           :: Y(:), mas(:),aaxx(:,:), gaxx(:),kappa(:),gaxx_tot(:),gaff_tot(:)
   TYPE(VODE_OPTS)                      :: OPTIONS
+  logical                              :: check
 
 !------------------------------------------------------------------------------!
   ! init mpi
@@ -49,44 +50,8 @@ program main
   argsint%ma = params%ma
 
   argsint%g = 1.0_rk
-    nsqrt = 100
-    allocate( gaxx(nsqrt), kappa(nsqrt) )
-    allocate(gaxx_tot(nsqrt*nsqrt),gaff_tot(nsqrt*nsqrt))
-    call linspace( -18.0_rk, -1.0_rk, kappa )
-    kappa(:) = 10**kappa(:)
-    call linspace( -12.0_rk, -1.0_rk, gaxx)
-    gaxx(:) = 10**gaxx(:)
-
-    k = 1
-    do i=1,nsqrt
-      do j=1,nsqrt
-        gaxx_tot(k) = gaxx(i)
-        gaff_tot(k) = kappa(j)/gaxx(i)
-        k = k+1
-      end do
-    end do
-  open (unit=96, file="temp/regimes2.txt", status='old', action='write', position='append', iostat=io_error)
-  if (io_error==0) then
-  do i=1,size(gaxx_tot)
-    params%gaff(1) = gaff_tot(i)
-    params%gaxx(1) = gaxx_tot(i)
-    call choose_regime(params, argsint)
-      select case(params%regime)
-      case("freeze-in")
-        write(96,*) params%gaxx(1)*params%gaff(1), params%gaxx(1), 1
-      case("seq-freeze-in")
-        write(96,*) params%gaxx(1)*params%gaff(1), params%gaxx(1), 2
-      case("reannihilation")
-        write(96,*) params%gaxx(1)*params%gaff(1), params%gaxx(1), 3
-      case("freeze-out")
-        write(96,*) params%gaxx(1)*params%gaff(1), params%gaxx(1), 4
-      end select
-  end do
-    else
-      WRITE(*,*) "error"
-    end if
-    close(96)
-  stop
+  call choose_regime(params, argsint)
+  if (params%regime .ne. "reannihilation") stop
   call initial_conditions( params, q, q_tot, rhs, argsint )
 
   dz = params%dz
@@ -110,11 +75,13 @@ program main
   it = 1
 
   eps = 1.0_rk
-  conv_eps = 1e-3_rk
+  conv_eps = 5e-4_rk
   z  = params%z_start
   argsint%helper = .false.
-
-  do while ( z <= params%z_max .and. eps > conv_eps .or. z<=0.0_rk)
+  Tprime = 1.0_rk
+  check = .true.
+  eps_old=1.0_rk
+  do while ( z <= params%z_max .and. eps > conv_eps .and. Tprime>1e-3_rk .or. z<=0.2_rk )
     !call rhs_contributions_general( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it))
     it = it + 1
     zpdz = z + params%dz_plot
@@ -148,16 +115,20 @@ program main
     eps = abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it))
 
     write(*,*) z, eps, Tprime!q_tot(2,1,it), q_tot(4,1,it)
+!    if (eps>eps_old .and. check) then
+!      argsint%helper = .false.
+!      check = .false.
+!    end if
   end do
 
-
+  !call check_BBN(q)
   if (rank==0) then
     write(*,'(80("_"))')
     write(*,*) "main time loop over, writing results to files"
   end if
 
   ! write results to file
-  open (unit=97, file="temp/lastfo.txt", status='old', action='write', position='append', iostat=io_error)
+  open (unit=97, file="temp/reann_ratio5gaxx-2.txt", status='old', action='write', position='append', iostat=io_error)
   do i=1,params%N
   !  call write_matrix("temp/"//exp2str(params%gaff(i))//exp2str(params%gaxx(i))//".txt",q_tot(:,i,:))
     call write_matrix("temp/"//trim(adjustl(params%file))//".txt",q_tot(:,i,1:it))
@@ -166,6 +137,7 @@ program main
     call write_gnuplot_rhs(99, "temp/rhs_"//trim(adjustl(params%file)))
     if (io_error==0) then
       !write(97,*) params%gaxx(i)*params%gaff(i), params%gaxx(i), q_tot(2,i,it)
+      write(97,*) params%gaff(i), params%ma, q_tot(2,i,it)
     else
       write(*,*) 'error', io_error,' while opening the file temp/in_n.txt'
     end if

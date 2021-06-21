@@ -3,47 +3,35 @@
       implicit none
       real(kind=rk), intent(in)           :: Ta, T,rhoprime
       type (type_params), intent(in)      :: params
-      integer(kind=ik)                    :: nd, nr
-      real(kind=rk)                       :: gHS, gSM, rar, rhoa, rhoDM
+      real(kind=rk)                       :: rar, rhoa, rhoDM
 
-      !nd = size(params%geff_HS,2)
-      ! DOFS
-      !call test_bezier(params%geff_HS(1,:),params%geff_HS(2,:),log10(Ta),gHS,nd-1,params%A,params%B)
-      !call geffSM(T,params,gSM)
-      gSM = geff_rho(T)
-      ! Axion temperature
-      !nr = size(params%rhoa_rho,2)
-      !call interp_linear(nr, params%rhoa_rho(1,:),params%rhoa_rho(2,:),T, rar)
       rhoa = rhoeq(Ta,params%ma,ga)
       rhoDM = rhoeq(Ta,params%mx,gDM)
-      !Taroot = sqrt(params%gaff(1)*sqrt(( 10.75_rk/(1.0_rk) *rar )))*T !- Ta
-      Taroot = (rhoa+rhoDM)/(gSM*T*T*T*T*pi*pi/30.0_rk)-params%gaff(1)*params%gaff(1)*rhoprime
-      !if (T>params%mx) then
-      !  Taroot = rhoa+rhoDM - rhoprime
-      !else
-      !  Taroot = rhoa+rhoDM*facrhoDM -rhoprime
-      !end if
+      Taroot = (rhoa+rhoDM)/rho_SM(T)-params%gaff(1)*params%gaff(1)*rhoprime
     end function Taroot
 
-!    real(kind=rk) function Tanew(T,params,rhoprime,facrhoDM)
-!      implicit none
-!      real(kind=rk), intent(in)               :: T
-!      type (type_params), intent(in)          :: params
-!      real(kind=rk), dimension(:), intent(in) :: facrhoDM,rhoprime
-!      integer(kind=ik)                        :: i
-!
-!      do i=1,params%N
-!        Tanew=rtbis(Taroot,1e-5_rk,100000.0_rk,1e-10_rk,params,T,rhoprime(i),facrhoDM(i))
-!      end do
-!    end function Tanew
-!
     real(kind=rk) function Ta(T,params,rhoa)
       implicit none
       real(kind=rk), intent(in)           :: T, rhoa
       type (type_params), intent(in)      :: params
-      Ta = rtbis(Taroot,1e-4_rk,10000.0_rk,1e-10_rk,params,T,rhoa)
+      Ta = rtbis(Taroot,1e-4_rk,100000.0_rk,1e-5_rk,params,T,rhoa)
       !Ta = Taroot(T,T,params)!
     end function Ta
+
+    real(kind=rk) function Ta_seq_fi(T,params,rhooverna)
+      implicit none
+      real(kind=rk), intent(in)           :: T, rhooverna
+      type (type_params), intent(in)      :: params
+      Ta_seq_fi = rtbis(Taroot_seq_fi,1e-6_rk,100.0_rk,1e-10_rk,params,T,rhooverna)
+    end function Ta_seq_fi
+
+    real(kind=rk) function Taroot_seq_fi(Ta,T,params,rhoovern)
+      implicit none
+      real(kind=rk), intent(in)           :: Ta, T,rhoovern
+      type (type_params), intent(in)      :: params
+
+      Taroot_seq_fi = rhoeqneq(Ta,params%ma)-rhoovern
+    end function Taroot_seq_fi
 
     FUNCTION rtbis(func,x1,x2,xacc,params, T,rhoprime)
     IMPLICIT NONE
