@@ -14,16 +14,16 @@ subroutine write_gnuplot_rhs(unit_number, filename)
     write(unit_number,*)  "set ylabel 'rhs'"
     write(unit_number,*)  "set key font ',1'"
     write(unit_number,*)  "set logscale y"
-    write(unit_number,*)  "set yrange[1e-10:1e5]"
+    write(unit_number,*)  "set yrange[1e-20:1e-6]"
     write(unit_number,*)  "set grid ytics lc rgb '#bbbbbb' lw 1 lt 0"
     write(unit_number,*)  "set grid xtics lc rgb '#bbbbbb' lw 1 lt 0"
     write(unit_number,*)  "load 'gnuplot-palettes-master/dark2.pal'"
-    write(unit_number,*)  "plot '", filename, ".txt' using 1:2 with lines ls   1 title '$T^\prime$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:3 with lines ls   2 title '$\chi \chi \leftrightarrow aa$', \"!'$a a \rightarrow \chi \chi$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:4 with lines ls   3 title 'SM $\rightarrow \chi$', \"!'$\chi \chi \rightarrow aa$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:5 with lines ls   4 title '$3 H n_\chi$', \"!'$ff \rightarrow a i$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:6 with lines ls   5 title '$3 H n_a$', \"!'$ff \rightarrow \chi \chi$' , \"
-    write(unit_number,*)  "'", filename, ".txt' using 1:7 with lines ls   6 title 'SM $\rightarrow a$', \"!'$\chi \chi \rightarrow aa$ eq' "
+    write(unit_number,*)  "plot '", filename, ".txt' using 1:2 with lines ls   1 title '$H(T)$' , \"!'$T^\prime$' , \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:3 with lines ls   2 title '$\langle \sigma v_{\chi \bar\chi \leftrightarrow aa}\rangle n_\chi$', \"!'$\chi \chi \leftrightarrow aa$', \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:4 with lines ls   3 title '$\langle \sigma v_{aa \leftrightarrow \chi \bar\chi}\rangle n_a$', \"!'SM $\rightarrow \chi$', \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:5 with lines ls   4 title '$\langle \sigma v_{a\chi \leftrightarrow a \chi}\rangle n_a$', \"!'$3 H n_\chi$', \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:6 with lines ls   5 title '$\langle \sigma v_{\chi\bar\chi \leftrightarrow f \bar f}\rangle n_\chi$', \"!'$3 H n_a$', \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:7 with lines ls   6 title '$\langle \sigma v_{a SM \leftrightarrow SM SM}\rangle n_{SM}$', \"!'SM $\rightarrow a$', \"
   else
     write(*,*) 'error', io_error,' while opening the file ', filename
   end if

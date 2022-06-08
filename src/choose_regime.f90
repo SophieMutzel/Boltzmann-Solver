@@ -3,7 +3,7 @@ subroutine choose_regime(params, argsint)
   type (type_params), intent(inout)  :: params
   type (type_argsint), intent(inout) :: argsint
   real(kind=rk)                      :: mx, ma, abserr, rar, Tmx
-  real(kind=rk)                      :: neqazp, sv_aaxx, gam_agff, ffa, gam_xxff
+  real(kind=rk)                      :: neqazp, sv_aaxx, gam_agff, ffa, gam_xxff,gam_afgf
   real(kind=rk)                      :: SM_axion, SM_DM, axion_DM
   integer(kind=ik)                   :: i, ier, neval, nT=20
   real(kind=rk), allocatable         :: Tprime(:,:)
@@ -11,22 +11,21 @@ subroutine choose_regime(params, argsint)
   mx = params%mx
   ma = params%ma
   ! SM axion interaction
-  call gamma_r_new( ma, argsint, "agffth", gam_agff )
+  call gamma_r_new( mx, argsint, "agffth", gam_agff )
   gam_agff = gam_agff*params%gaff(1)*params%gaff(1)
   ! inverse decay a->ff
-  ffa = gammav(ma, argsint, "affth")*params%gaff(1)*params%gaff(1)
-  !write(*,*) sqrt(Hub(ma,0.0_rk)/(gam_agff/neq(ma,ma,ga)+ffa))
-  !stop
-  !call gamma_r_new( T, argsint, "afgf", gam_afgf(1) )
+  ffa = gammav(mx, argsint, "affth")*params%gaff(1)*params%gaff(1)
+
+  call gamma_r_new( mx, argsint, "afgfth", gam_afgf )
+  gam_afgf = gam_afgf*params%gaff(1)*params%gaff(1)
   ! SM DM interaction
   call gamma_r_new( mx, argsint, "xxffth", gam_xxff )
   gam_xxff = gam_xxff*params%gaxx(1)*params%gaff(1)*params%gaxx(1)*params%gaff(1)
 
   ! check equilibrium SM<->axions
-  SM_axion = (gam_agff/neq(ma,ma,ga)+ffa)/Hub(ma,rhoeq(ma,mx,gDM)+rhoeq(ma,ma,ga))
+  SM_axion = (gam_agff/neq(mx,ma,ga)+2.0_rk*gam_afgf/neq(mx,ma,ga)+ffa)/Hub(mx,rhoeq(mx,mx,gDM)+rhoeq(mx,ma,ga))
   ! check equilibrium SM<->DM
   SM_DM = gam_xxff/neq(mx,mx,gDM)/Hub(mx,rhoeq(mx,mx,gDM)+rhoeq(mx,ma,ga))
-  write(*,*) SM_axion, SM_DM
 
   if (( SM_axion > 1.0_rk ) .and. ( SM_DM > 1.0_rk )) then
       params%regime = "freeze-out"
@@ -56,7 +55,6 @@ subroutine choose_regime(params, argsint)
       sv_aaxx = sv_aaxx*params%gaxx(1)*params%gaxx(1)*params%gaxx(1)*params%gaxx(1)
       ! check equilibrium DM<->axions
       axion_DM = sv_aaxx*neqazp/Hub(Tmx,rhoeq(mx,mx,gDM)+rhoeq(mx,ma,ga))
-      write(*,*) axion_DM, Tmx, sv_aaxx
       if ( axion_DM > 1.0_rk) then
         params%regime = "reannihilation"
       else

@@ -33,7 +33,7 @@ subroutine ini_cons_to_params( params, argsint )
    !call read_matrix_from_file(trim(params%ini_direc)//'rhoprho59.txt', params%rhoa_rho, 2, .false.)
    call read_matrix_from_file(trim(params%ini_direc)//'drhop09thlogT.txt', params%drhoa, 2, .false.)
    call read_matrix_from_file(trim(params%ini_direc)//'drhopfgfa09th.txt', fgfa, 2, .false.)
-   params%drhoa(2,:) = params%drhoa(2,:) + fgfa(2,:)
+   params%drhoa(2,:) = params%drhoa(2,:) + 2.0_rk*fgfa(2,:)
    deallocate(fgfa)
    !call read_matrix_from_file(trim(params%ini_direc)//'drhop09.txt', params%drhoa, 2, .false.)
 

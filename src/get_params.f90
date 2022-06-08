@@ -2,7 +2,7 @@ subroutine get_params(params)
   use f90getopt
   implicit none
   type(type_params), intent(inout) :: params
-  type(option_s)                :: opts(13)
+  type(option_s)                :: opts(15)
   character(len=20)             :: gaxx, kappa
   logical                       :: kin, gin
 
@@ -17,7 +17,8 @@ subroutine get_params(params)
   opts(10) = option_s( "nt",  .true.,  't' )
   opts(11) = option_s( "dz",  .true.,  'z' )
   opts(12) = option_s( "file",  .true.,  'f' )
-  opts(13) = option_s( "help", .false.,  'h')
+  opts(13) = option_s( "grid",  .false.,  'r' )
+  opts(14) = option_s( "help", .false.,  'h')
 
   ! If no options were committed
   if (command_argument_count() .eq. 0 ) then
@@ -27,7 +28,7 @@ subroutine get_params(params)
 
   ! Process options one by one
   do
-    select case( getopt( "h:x:a:m:s:p:n:k:g:t:z:f", opts ) ) ! opts is optional (for longopts only)
+    select case( getopt( "h:r:x:a:m:s:p:n:k:g:t:z:f", opts ) ) ! opts is optional (for longopts only)
       case( char(0) )
         exit
       case( 'x' )
@@ -54,6 +55,8 @@ subroutine get_params(params)
         gaxx = optarg
       case( 'f' )
         params%file = optarg
+      case( 'r' )
+        params%grid = .true.
       case( 'h' )
         write (*,*) "Available Options:  --mx -x --ma -a --zmax -m --zstart -s&
                     --dzplot -p --N -n --kappa -k --gaxx -g -h --help"
@@ -61,8 +64,8 @@ subroutine get_params(params)
   end do
 !read(memstring(10:len_trim(memstring)-2),* )
   if ( kin) then
-      read(kappa(1:INDEX(kappa, ",")-1),*) params%kappa_range(1)
-      read(kappa(INDEX(kappa, ",")+1:), *) params%kappa_range(2)
+    read(kappa(1:INDEX(kappa, ",")-1),*) params%kappa_range(1)
+    read(kappa(INDEX(kappa, ",")+1:), *) params%kappa_range(2)
   end if
   if ( gin) then
     read(gaxx(1:INDEX(gaxx, ",")-1),*) params%gaxx_range(1)

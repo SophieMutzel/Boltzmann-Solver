@@ -17,6 +17,12 @@ module module_precision
   real(kind=rk), parameter, public   :: Mpl = 1.22e19_rk
   real(kind=rk), parameter, public   :: Yxmxobs = 2.045e-10_rk
   real(kind=rk), parameter, public   :: QCDcut = 0.6_rk
+  real(kind=rk), parameter, public   :: omegax = 0.12_rk ! observed DM relic density
+  real(kind=rk), parameter, public   :: rhocrit = 10.537_rk ! critical density, in GeV/m^3
+  real(kind=rk), parameter, public   :: s0 = 2.8912e9_rk ! entropy today, in m^(-3)
+  real(kind=rk), parameter, public   :: v = 246.0_rk ! Higgs vev in GeV
+  real(kind=rk), parameter, public   :: mh = 125.0_rk ! Higgs mass in GeV
+
 
   ! number of rhs
   integer(kind=ik), public :: nrhs != 3

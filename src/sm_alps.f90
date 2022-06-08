@@ -10,8 +10,8 @@ end function kernel_afgf
 real(kind=rk) function kernel_afgf_th( s, argsint )
   implicit none
     real(kind=rk), intent(in)           :: s
-    type (type_argsint), intent(in)     :: argsint
-    kernel_afgf_th = sigma_afgf_th(s,argsint%mf,argsint%ma,argsint%mg,argsint%g)*4.0_rk*&
+    type (type_argsint), intent(inout)  :: argsint
+    kernel_afgf_th = sigma_afgf_th(s,argsint%mf,argsint%ma,argsint%mg,argsint%g,argsint)*4.0_rk*&
                   F(s,argsint%ma,argsint%mf)*F(s,argsint%ma,argsint%mf)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
     return
 end function kernel_afgf_th
@@ -33,6 +33,15 @@ real(kind=rk) function kernel_agff_th( s, argsint )
                   F(s,argsint%ma,argsint%mg)*F(s,argsint%ma,argsint%mg)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
     return
 end function kernel_agff_th
+
+real(kind=rk) function kernel_ahff( s, argsint )
+  implicit none
+    real(kind=rk), intent(in)           :: s
+    type (type_argsint), intent(in)     :: argsint
+    kernel_ahff = sigma_ahff(s,argsint%mf,argsint%ma,argsint%g)*4.0_rk*&
+                  F(s,argsint%ma,mh)*F(s,argsint%ma,mh)/sqrt(s) * bessK1( sqrt(s)/argsint%T)
+    return
+end function kernel_ahff
 
 real(kind=rk) function kernel_ffag( s, argsint )
   implicit none

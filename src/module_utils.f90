@@ -5,7 +5,7 @@ module module_utils
 
   implicit none
   type, public :: type_argsint
-    real(kind=rk)                     :: T, mf, nc, mx, ma, g, mg, ra_ini
+    real(kind=rk)                     :: T, mf, nc, mx, ma, g, mg, ra_ini, s
     real(kind=rk), allocatable        :: drhoa(:,:)
     logical                           :: helper
   end type type_argsint

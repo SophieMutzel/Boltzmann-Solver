@@ -28,7 +28,7 @@ ifeq ($(shell $(FC) --version 2>&1 | head -n 1 | head -c 3),GNU)
 FFLAGS += -J$(OBJDIR) # specify directory for modules.
 FFLAGS += -O3 -ffree-line-length-none
 PPFLAG= -cpp #preprocessor flag
-#LDFLAGS = -llapack
+LDFLAGS = -llapack
 # Debug flags for gfortran:
 FFLAGS += -Wuninitialized -fimplicit-none -fbounds-check -g -ggdb -pedantic
 FFLAGS += -Wall -Wextra -Wconversion -g3 -fbacktrace -ffpe-trap=zero,invalid -finit-real=nan -finit-integer=-99999
@@ -46,23 +46,15 @@ FFLAGS += -module $(OBJDIR) # specify directory for modules.
 #LDFLAGS = -L/usr/X11/lib/ -lX11 #-L/usr/lib64/lapack -llapack
 endif
 
-all: directories boltzmann general#freeze_out freeze_in
+all: directories general#boltzmannfreeze_out freeze_in
 
 # Compile main programs, with dependencies.
-boltzmann: main.f90 $(MOBJS) $(OBJS)
-	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
+#boltzmann: main.f90 $(MOBJS) $(OBJS)
+#	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
 
 # Compile main programs, with dependencies.
 general: boltzmann_general.f90 $(MOBJS) $(OBJS)
-	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
-
-# Compile main programs, with dependencies.
-freeze_out: freeze_out.f90 $(MOBJS) $(OBJS)
-	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
-
-# Compile main programs, with dependencies.
-freeze_in: freeze_in.f90 $(MOBJS) $(OBJS)
-	$(FC) $(FFLAGS) -o $@ $^ #$(LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Compile modules (module dependency must be specified by hand in
 # Fortran). Objects are specified in MOBJS (module objects).
@@ -73,7 +65,7 @@ $(OBJDIR)/f90getopt.o: f90getopt.f90
 		$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_read_write.o: module_read_write.f90 $(OBJDIR)/module_precision.o \
-	write_gnuplot.f90 write_gnuplot_rhs.f90 write_gnuplot_fo.f90
+	write_gnuplot.f90 write_gnuplot_rhs.f90
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_utils.o: module_utils.f90 $(OBJDIR)/module_precision.o \
@@ -91,15 +83,15 @@ $(OBJDIR)/module_cosmo.o: module_cosmo.f90 $(OBJDIR)/module_precision.o $(OBJDIR
 $(OBJDIR)/module_xsecs.o: module_xsecs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_utils.o
 	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
-$(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
-	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o \
-	RK4.f90 rhs_contributions.f90 region3aeq.f90 region3a_in_n.f90 rhs_contributions_in_n.f90 \
-	sm_alps.f90 HS_interaction.f90 thermal_masses.f90 initial_conditions.f90 initial_integrals.f90 \
-	region_freeze_out.f90 region_freeze_out_coupled.f90 region_freeze_in.f90 choose_regime.f90 \
-	rhs_contributions_general.f90 general_rhs.f90
-	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
-
 $(OBJDIR)/dvode.o: dvode.f90  $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o
+
+$(OBJDIR)/module_rhs.o: module_rhs.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o \
+	$(OBJDIR)/module_utils.o $(OBJDIR)/module_xsecs.o $(OBJDIR)/module_cosmo.o $(OBJDIR)/dvode.o \
+ 	rhs_contributions_in_n.f90 sm_alps.f90 HS_interaction.f90 thermal_masses.f90 \
+	initial_conditions.f90 initial_integrals.f90 choose_regime.f90 \
+	rhs_contributions_general.f90 general_rhs.f90 build_grid.f90 boltzmann_logn.f90 freeze_in_grid.f90 \
+	aftogf.f90 boltzmann_axion.f90
+	$(FC) $(FFLAGS) -c -o $@ $< #$(LDFLAGS)
 
 $(OBJDIR)/module_dof.o: module_dof.f90 $(OBJDIR)/module_precision.o $(OBJDIR)/module_params.o $(OBJDIR)/module_utils.o \
 	ini_cons_to_params.f90 geff_new.f90

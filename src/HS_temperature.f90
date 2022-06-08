@@ -14,7 +14,7 @@
       implicit none
       real(kind=rk), intent(in)           :: T, rhoa
       type (type_params), intent(in)      :: params
-      Ta = rtbis(Taroot,1e-4_rk,100000.0_rk,1e-5_rk,params,T,rhoa)
+      Ta = rtbis(Taroot,1e-5_rk,1e5_rk,1e-5_rk,params,T,rhoa)
       !Ta = Taroot(T,T,params)!
     end function Ta
 
