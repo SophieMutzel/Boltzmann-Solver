@@ -34,18 +34,18 @@ subroutine boltzmann_axion( N, lz, Y, Ynew, params, argsint )
     call gamma_r_new( T, argsint, "agffth", gam_agff(i) )
     !call gamma_r_new( T, argsint, "agff", gam_agff(i) )
     gam_agff(i) = gam_agff(i)*params%gaff(i)*params%gaff(i)
-    !gam_afgf(i) = 0.0_rk
+    gam_afgf(i) = 0.0_rk
 
     !nz = size(params%gam_afgf,2)
     !call interp_linear(nz, params%gam_afgf(1,:),params%gam_afgf(2,:),lz, gam_afgf(i))
-    call gamma_r_new( T, argsint, "afgfth", gam_afgf(i) )
-    gam_afgf(i) = gam_afgf(i)*params%gaff(i)*params%gaff(i)!
+    !call gamma_r_new( T, argsint, "afgfth", gam_afgf(i) )
+    !gam_afgf(i) = gam_afgf(i)*params%gaff(i)*params%gaff(i)!
 
     call gamma_r_new( T, argsint, "ahff", gam_ahff(i))
-    gam_ahff(i) = gam_ahff(i)*params%gaff(i)*params%gaff(i)!
+    gam_ahff(i) = 0.0_rk!gam_ahff(i)*params%gaff(i)*params%gaff(i)!
     ! inverse decay ff->a
-    ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
-    !ffa(i) = 0.0_rk
+    !ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
+    ffa(i) = 0.0_rk
   end do
     !Ynew(:) =  -l10*3.0_rk*q + l10*(-sv_aaxx*q*q+ &
     !          (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)*(1.0_rk-q/neqazp))/H

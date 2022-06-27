@@ -91,7 +91,7 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
           end if
-          gam = gam + alphaem*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+          gam = gam + alphaem*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
         if (T>QCDcut) then
           do i=4, 9
@@ -104,7 +104,7 @@ module module_rhs
             !if (ier > 0)  write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
             end if
             gam = gam + (0.5_rk*alphas*ga*gg+alphaem*qf(i)*qf(i)*ga*ggamma)&
-                        *T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+                        *T/(32.0_rk*pi*pi*pi*pi)*result
           end do
         end if
       case("afgf")
@@ -117,7 +117,7 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
           end if
-          gam = gam + alphaem*qf(i)*qf(i)*ga*gf(i)*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+          gam = gam + alphaem*qf(i)*qf(i)*ga*gf(i)*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
         if (T>QCDcut) then
           do i=4, 9
@@ -130,7 +130,7 @@ module module_rhs
               if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
             end if
             gam = gam + (4.0_rk/3.0_rk*alphas*ga*gf(i)+alphaem*qf(i)*qf(i)*ga*gf(i))&
-                        *T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+                        *T/(32.0_rk*pi*pi*pi*pi)*result
           end do
         end if
       case("xxff")
@@ -144,7 +144,7 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
           end if
-          gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+          gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
         end do
       case("xxffth")
         do i=1, 3

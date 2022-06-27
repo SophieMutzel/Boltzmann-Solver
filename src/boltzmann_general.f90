@@ -47,6 +47,9 @@ program main
   argsint%mx = params%mx
   argsint%ma = params%ma
 
+  test= sigma_agff_th(1000.0_rk, 12.0_rk, 4.0_rk, 6.0_rk, 1.0_rk)
+  write(*,*) test*12.0_rk*12.0_rk
+
   params%N = 1_ik
   allocate(params%gaff(params%N))
   allocate(params%gaxx(params%N))

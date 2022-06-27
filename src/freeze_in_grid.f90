@@ -27,7 +27,7 @@ real(kind=rk), dimension(1)             :: Y,Ynew
   epsabs=1e-30_rk
   epsrel=1e-30_rk
   argsint%drhoa = params%drhoa
-  do e=-4.3_rk,-4.0_rk,0.05_rk!e=-2.0_rk,1.0_rk,0.02_rk!i=1,29!!i=23,29!
+  do e=-2.0_rk,1.0_rk,0.02_rk!i=1,29!!i=23,29!-4.3_rk,-4.0_rk,0.05_rk!
     ma = 10.0_rk**e!mavals(i)!
     mx = 10.0_rk*ma
     params%ma = ma
@@ -40,19 +40,18 @@ real(kind=rk), dimension(1)             :: Y,Ynew
     call gamma_r_new( mx, argsint, "afgfth", gam_afgf )
     call gamma_r_new( mx, argsint, "ahff", gam_ahff )
 
-    gaffmin = log10(sqrt(Hub(mx,0.0_rk)/(gam_agff/neq(mx,ma,ga)+ 2.0_rk*gam_afgf/neq(mx,ma,ga)+ffa)))
+    gaffmin = log10(sqrt(Hub(mx,0.0_rk)/(gam_agff/neq(mx,ma,ga)+ 2.0_rk*gam_afgf/neq(mx,ma,ga)+ffa+gam_ahff/neq(mx,ma,ga))))
     gaffminmin=gaffmin
     gaffnew = gaffmin
-
     do while (gaffminmin<=gaffnew .and. gaffnew>-10.0_rk)
       gaffnew = gaffnew - 0.05_rk
       params%gaff(1) = 10.0_rk**gaffnew
       Y=0.0_rk
-      z = -1.9_rk!log10(0.1_rk)
-      atol = 1e-2_rk ! absolute tolerance
+      z = log10(mx/T_RH)!-1.9_rk!log10(0.1_rk)
+      atol = 1e-5_rk ! absolute tolerance
       rtol = 1e-2_rk ! relative tolerance
 
-      OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=params%dz,HMAX=0.001_rk,MXSTEP=1000000)
+      OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=params%dz,HMAX=0.01_rk,MXSTEP=1000000)
       itask = 1
       istate = 1
       do while ( z<0.0_rk )!.or. eps > conv_eps )
@@ -61,10 +60,8 @@ real(kind=rk), dimension(1)             :: Y,Ynew
         CALL VODE_F90( boltzmann_axion, 1, Y, z, zpdz, itask, &
                     istate, OPTIONS, params, argsint )
         T = mx/10**z
-        !write(*,*) z, Y(1)/T/T/T, neq(T,ma,ga)/T/T/T
         if (Y(1)>=neq(mx/10**z,ma,ga)) then
           gaffminmin = gaffnew
-        !  write(*,*) gaffminmin
         end if
         !write(*,*) z, Y(1), neq(mx/10**z,mx,gDM)
         !eps = abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it))
@@ -72,7 +69,28 @@ real(kind=rk), dimension(1)             :: Y,Ynew
         z = zpdz
       end do
     end do
+    params%gaff(1) = 10.0_rk**gaffnew
+    Y=0.0_rk
+    z = log10(mx/600.0_rk)!-1.9_rk!log10(0.1_rk)
+    write(*,*) z
+    atol = 1e-5_rk ! absolute tolerance
+    rtol = 1e-2_rk ! relative tolerance
 
+    OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=params%dz,HMAX=0.01_rk,MXSTEP=1000000)
+    itask = 1
+    istate = 1
+    do while ( z<0.0_rk )!.or. eps > conv_eps )
+      zpdz = z + params%dz_plot
+      call boltzmann_axion(1, zpdz, Y, Ynew, params, argsint)
+      CALL VODE_F90( boltzmann_axion, 1, Y, z, zpdz, itask, &
+                  istate, OPTIONS, params, argsint )
+      T = mx/10**z
+      write(*,*) z, Y(1)/T/T/T, neq(mx/10**z,ma,ga)/T/T/T
+      !eps = abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it))
+
+      z = zpdz
+    end do
+    stop
 
 
 !    call linspace(log10(mx), log10(30.0_rk*mx), Tprime(2,:))

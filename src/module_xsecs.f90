@@ -139,17 +139,38 @@ contains
     masq = ma*ma
     mfsq = mfi*mfi
     mgsq = mg*mg
-    sigma_agff_th = 8.0_rk*pi*gaff*gaff*((Sqrt(s*(-4.0_rk*mfsq + s))* &
-                  (-((masq*(mgsq +2.0_rk* mfsq)*(-s**(1.5_rk)*Sqrt(-4.0_rk* mfsq + s) + (masq + mgsq)*&
-                  Sqrt(s*(-4.0_rk*mfsq +s))))/((masq - mgsq)*(masq - mgsq)*mfsq + masq*mgsq*s -&
-                  2.0_rk* (masq + mgsq)*mfsq*s + mfsq*s*s)) - ((masq*masq -&
-                  4.0_rk* masq*mfsq + (mgsq - s)*(mgsq - s))*Log(((masq + mgsq - s)*&
-                  Sqrt(s) - Sqrt(-4.0_rk* mfsq + s)*Sqrt(masq*masq + (mgsq - s)*(mgsq - s) -&
-                  2.0_rk* masq*(mgsq + s)))/((masq + mgsq - s)*Sqrt(s) +&
-                  Sqrt(-4.0_rk* mfsq + s)*Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s)))))&
-                  /Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))/(16.0_rk *pi*pi*&
-                  Sqrt(1.0_rk - (4.0_rk* mfsq)/s)*(masq + mgsq - s)*s*&
-                  Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))
+!    sigma_agff_th = 8.0_rk*pi*gaff*gaff*((Sqrt(s*(-4.0_rk*mfsq + s))* &
+!                  (-((masq*(mgsq +2.0_rk* mfsq)*(-s**(1.5_rk)*Sqrt(-4.0_rk* mfsq + s) + (masq + mgsq)*&
+!                  Sqrt(s*(-4.0_rk*mfsq +s))))/((masq - mgsq)*(masq - mgsq)*mfsq + masq*mgsq*s -&
+!                  2.0_rk* (masq + mgsq)*mfsq*s + mfsq*s*s)) - ((masq*masq -&
+!                  4.0_rk* masq*mfsq + (mgsq - s)*(mgsq - s))*Log(((masq + mgsq - s)*&
+!                  Sqrt(s) - Sqrt(-4.0_rk* mfsq + s)*Sqrt(masq*masq + (mgsq - s)*(mgsq - s) -&
+!                  2.0_rk* masq*(mgsq + s)))/((masq + mgsq - s)*Sqrt(s) +&
+!                  Sqrt(-4.0_rk* mfsq + s)*Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s)))))&
+!                  /Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))/(16.0_rk *pi*pi*&
+!                  Sqrt(1.0_rk - (4.0_rk* mfsq)/s)*(masq + mgsq - s)*s*&
+!                  Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))
+
+  sigma_agff_th = -0.5_rk*(gaff*gaff*((masq*(2.0_rk*mfsq + mgsq)*&
+                  (masq + mgsq - s)*Sqrt(s*(-4.0_rk*mfsq + s)))/&
+                  ((mfsq*(masq - mgsq)*(masq - mgsq) + masq*mgsq*s - &
+                  2.0_rk*mfsq*(masq + mgsq)*s + mfsq*s*s)*Sqrt(masq*masq &
+                  + (mgsq - s)*(mgsq - s) - 2.0_rk*masq*(mgsq + s)))&
+                   + ((masq*masq - 4.0_rk*masq*mfsq + (mgsq - s)*(mgsq - s))&
+                   *Log((1.0_rk + (Sqrt(1.0_rk - (4.0_rk*mfsq)/s)*&
+                   Sqrt(masq*masq + (mgsq - s)*(mgsq - s)- 2*masq*(mgsq + s)))/&
+                   (-masq - mgsq + s))/(1.0_rk - (Sqrt(1.0_rk - (4.0_rk*mfsq)/s)&
+                   *Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - &
+                   2.0_rk*masq*(mgsq + s)))/(-masq - mgsq + s))))/(masq*masq + &
+                   (mgsq - s)*(mgsq - s) - 2.0_rk*masq*(mgsq + s))))/(masq + mgsq - s)
+                  !*mfsq*alpha*q_f*qf*nc
+!    sigma_agff_th = (gaff*gaff)/(16.0_rk*pi*pi)*&
+!                  sqrt(lambda(s,mfsq,mfsq)/lambda(s,masq,mgsq))*1.0_rk/(masq+mgsq-s)*&
+!                  ((masq*masq-4.0_rk* masq *mfsq+(mgsq-s)*(mgsq-s))/(sqrt(lambda(s,masq,mgsq)*(s*(s-4.0_rk* mfsq)))*&
+!                  log((sqrt(s)*(masq+mgsq-s)-sqrt(lambda(s,masq,mgsq))*&
+!                  sqrt(s-4.0_rk* mfsq))/(sqrt(s)*(masq+mgsq-s)+sqrt(lambda(s,masq,mgsq))*&
+!                  sqrt(s-4*mfsq)))+(masq *(mgsq+2.0_rk* mfsq)*(masq+mgsq-s))&
+!                  /((masq-mgsq)*(masq-mgsq)*mfsq+masq*mgsq-2.0_rk*(masq+mgsq)*mfsq*s+mfsq*s*s)))
     return
   end function sigma_agff_th
 
