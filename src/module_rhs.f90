@@ -157,7 +157,7 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
           end if
-          gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+          gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
         end do
         if (T>QCDcut) then
           do i=4,9
@@ -170,13 +170,14 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
             end if
-            gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+            gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
           end do
         end if
       case("agffth")
         argsint%mg = mgamma_th(T)
         do i=1, 3
           argsint%mf = ml_th(T,mf(i),qf(i))
+          argsint%nc = ncf(i)
           call qagi(kernel_agff_th,argsint,max((ma+argsint%mg)*&
                     (ma+argsint%mg),4.0_rk*argsint%mf*argsint%mf),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
@@ -186,11 +187,12 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
           end if
-          gam = gam + alphaem*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+          gam = gam + alphaem*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
         end do
         if (T>QCDcut) then
           do i=4,9
             argsint%mf = mq_th(T,mf(i),qf(i))
+            argsint%nc = ncf(i)
             call qagi(kernel_agff_th,argsint,max((ma+argsint%mg)*&
                       (ma+argsint%mg),4.0_rk*argsint%mf*argsint%mf),&
                       1, epsabs, epsrel, result, abserr, neval, ier)
@@ -200,11 +202,12 @@ module module_rhs
                         1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
               !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
             end if
-            gam = gam + alphaem*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+            gam = gam + alphaem*qf(i)*qf(i)*ga*ggamma*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
           end do
           argsint%mg = mg_th(T)
           do i=4, 9
             argsint%mf = mq_th(T,mf(i),qf(i))
+            argsint%nc = ncf(i)
             call qagi(kernel_agff_th,argsint,max(QCDcut*QCDcut,max((ma+argsint%mg)*&
                       (ma+argsint%mg),4.0_rk*argsint%mf*argsint%mf)),&
                       1, epsabs, epsrel, result, abserr, neval, ier)
@@ -214,7 +217,7 @@ module module_rhs
                         1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
               !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
             end if
-            gam = gam + 0.5_rk*alphas*ga*gg*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+            gam = gam + 1.0_rk/6.0_rk*alphas*ga*gg*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
           end do
         end if
       case("afgfth")
@@ -270,6 +273,7 @@ module module_rhs
       case("ahff")
         do i=1, 3
           argsint%mf = ml_th(T,mf(i),qf(i))
+          argsint%nc = ncf(i)
           call qagi(kernel_ahff,argsint,max((ma+mh)*&
                     (ma+mh),4.0_rk*argsint%mf*argsint%mf),&
                     1, epsabs, epsrel, result, abserr, neval, ier)
@@ -279,11 +283,12 @@ module module_rhs
                       1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
             !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
           end if
-          gam = gam + ga*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+          gam = gam + ga*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
         end do
         if (T>QCDcut) then
           do i=4, 9
             argsint%mf = mq_th(T,mf(i),qf(i))
+            argsint%nc = ncf(i)
             call qagi(kernel_ahff,argsint,max(QCDcut*QCDcut,max((ma+mh)*&
                       (ma+mh),4.0_rk*argsint%mf*argsint%mf)),&
                       1, epsabs, epsrel, result, abserr, neval, ier)
@@ -293,7 +298,7 @@ module module_rhs
                         1e8_rk, epsabs, epsrel, result, abserr, neval, ier)
               !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
             end if
-            gam = gam + ncf(i)*ga*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)
+            gam = gam + ga*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
           end do
         end if
 !      case("aaxx")
@@ -338,7 +343,7 @@ module module_rhs
                     1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
               !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
             end if
-            sv = result/4.0_rk/(2.0_rk*T*ma*ma*ma*ma*bessK2(ma/T)* bessK2(ma/T))
+            sv = result/4.0_rk/(2.0_rk*T*ma*ma*ma*ma*bessK2(ma/T)* bessK2(ma/T))*0.5_rk !initial particles identical!
           else
             call qagi(kernel_aaxx_series,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
                   1, epsabs, epsrel, result, abserr, neval, ier)
@@ -347,7 +352,7 @@ module module_rhs
                     1e10_rk, epsabs, epsrel, result, abserr, neval, ier)
               !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
             end if
-            sv = result
+            sv = result*0.5_rk !initial particles identical!
           end if
         case("xxaa")
           if (T>0.03_rk) then

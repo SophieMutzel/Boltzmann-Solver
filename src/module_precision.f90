@@ -7,10 +7,10 @@ module module_precision
   real(kind=rk), parameter, public   :: pi  = 4.0 * atan(1.0)
   real(kind=rk), parameter, public   :: l10 = log(10.0_rk)
   integer(kind=ik)                   :: BOLTZMANN_COMM
-  real(kind=rk),parameter,public     :: ga=1.0_rk, ggamma=2.0_rk, gg=16.0_rk, gDM=4.0_rk
+  real(kind=rk),parameter,public     :: ga=1.0_rk, ggamma=2.0_rk, gg=16.0_rk, gDM=2.0_rk
   real(kind=rk), dimension(9)        :: mf = (/ 0.000511, 0.1057, 1.777, 0.0046, 0.096, 4.18, 0.0022, 1.28, 173.0 /)
   real(kind=rk), dimension(9)        :: ncf = (/ 1., 1., 1., 3., 3., 3., 3., 3., 3. /)
-  real(kind=rk), dimension(9)        :: gf = (/ 4., 4., 4., 12., 12., 12., 12., 12., 12. /)
+  real(kind=rk), dimension(9)        :: gf = (/2., 2., 2., 6., 6., 6., 6., 6., 6. /)
   real(kind=rk), dimension(9)        :: qf = (/ 1., 1., 1., -1./3.,-1./3.,-1./3.,2./3.,2./3.,2./3. /)
   real(kind=rk), parameter, public   :: T_RH=2000.0_rk
   real(kind=rk), parameter, public   :: alpha_QED = 1.0_rk/137.0_rk

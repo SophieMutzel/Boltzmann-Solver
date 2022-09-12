@@ -13,11 +13,11 @@ contains
     masq = ma*ma
     mxsq = mx*mx
 
-    sigma_xxaa = gaxx*gaxx*gaxx*gaxx*0.5_rk*( mxsq*mxsq*((Sqrt(-4.0_rk*masq+s)*&
+    sigma_xxaa = gaxx*gaxx*gaxx*gaxx*( mxsq*mxsq*((Sqrt(-4.0_rk*masq+s)*&
                 (-3.0_rk*masq*masq+8.0_rk*masq*mxsq-2.0_rk*mxsq*s))&
                 /(Sqrt(-4.0_rk*mxsq+s)* (masq*masq-4.0_rk*masq*mxsq+mxsq*s))+((6.0_rk*masq*masq-4.0_rk*masq*s+s*s)*&
                 (Log(-2.0_rk*masq+s-Sqrt((-4.0_rk*masq+s)*(-4.0_rk*mxsq+s)))-Log(-2.0_rk*masq+s+Sqrt((-4.0_rk*masq+s)*&
-                (-4.0_rk*mxsq+s)))))/((2.0_rk*masq-s)*(-4.0_rk*mxsq+s))))/(8.0_rk*pi*s)
+                (-4.0_rk*mxsq+s)))))/((2.0_rk*masq-s)*(-4.0_rk*mxsq+s))))/(16.0_rk*pi*s)
 
     return
   end function sigma_xxaa
@@ -30,12 +30,14 @@ contains
     masq = ma*ma
     mxsq = mx*mx
 
-    sigma_aaxx = gaxx*gaxx*gaxx*gaxx*8.0_rk*(mxsq*mxsq*((Sqrt(-4.0_rk*mxsq+s)*(-3.0_rk* masq*masq+8.0_rk*masq*mxsq-2.0_rk* mxsq*s))&
-                /(Sqrt(-4.0_rk* masq+s)*(masq*masq-4.0_rk* masq*mxsq+mxsq*s))&
-                -((6.0_rk* masq*masq-4.0_rk* masq*s+s*s)*&
-                (Log(-2.0_rk* masq+s-Sqrt((-4.0_rk* masq+s)*(-4.0_rk* mxsq+s)))&
-                -Log(-2.0_rk* masq+s+Sqrt((-4.0_rk* masq+s)&
-                *(-4.0_rk* mxsq+s)))))/(8.0_rk* masq*masq-6.0_rk* masq*s+s*s)))/(8.0_rk*pi*s)
+    sigma_aaxx = (gaxx*gaxx*gaxx*gaxx*mxsq*mxsq*(&
+                (Sqrt(-4.0_rk*mxsq + s)*(-3.0_rk*masq*masq + 8.0_rk*masq*mxsq - 2.0_rk*mxsq*s))&
+                /(Sqrt(-4.0_rk*masq + s)*(masq*masq - 4.0_rk*masq*mxsq + mxsq*s)) - &
+                ((6.0_rk*masq*masq - 4.0_rk*masq*s + s*s)*(Log(-2.0_rk*masq + s&
+                 - Sqrt((-4.0_rk*masq + s)*(-4.0_rk*mxsq + s))) - &
+                 Log(-2.0_rk*masq + s + Sqrt((-4.0_rk*masq + s)*(-4.0_rk*mxsq + s)))))&
+                 /(8.0_rk*masq*masq - 6.0_rk*masq*s + s*s)))/(2.0_rk*pi*s)
+
     return
   end function sigma_aaxx
 
@@ -67,8 +69,8 @@ contains
     real(kind=rk), intent(in)        :: s, mf, nc, mx, ma, gaffgaxx
 
 
-    sigma_xxff = gaffgaxx*gaffgaxx*nc * s * sqrt(-4.*mf*mf + s) * mx * mx / &
-                ( 16. * pi * (ma*ma - s)*(ma*ma - s) * real( sqrt(-4.*mx*mx + s) ) )!mf*mf *
+    sigma_xxff = gaffgaxx*gaffgaxx*mf*mf*nc * s * sqrt(-4.*mf*mf + s) * mx * mx / &
+                ( 16. * pi * (ma*ma - s)*(ma*ma - s) * real( sqrt(-4.*mx*mx + s) ) )
     return
   end function sigma_xxff
 
@@ -85,28 +87,30 @@ contains
 
   ! prefac for gamma = alpha
   ! prefac for g = alpha_s*4/9
-  real(kind=rk) function sigma_agff(s, mf, ma, gaff)
+  real(kind=rk) function sigma_agff(s, mf,nc, ma, gaff)
     implicit none
-    real(kind=rk), intent(in)         :: s, mf, ma, gaff
+    real(kind=rk), intent(in)         :: s, mf, ma, gaff, nc
     real(kind=rk)                     :: masq, mfsq
 
     masq = ma*ma
     mfsq = mf*mf
     !sigma_ffga = prefac* ( mfsq*qf*qf* (masq*sqrt((4.0_rk mfsq-s)*s) - (masq*masq - 4.0_rk*masq*mfsq + s*s)&
     !                atan(sqrt(-1.0_rk+(4.0_rk*mfsq)/s))))/(2.0_rk*pi*sqrt((masq-s)*(masq-s))*sqrt(-s*s*(-4.0_rk mfsq+s)*(-4.0_rk*mfsq+s)))
-    sigma_agff = gaff*gaff*2.0_rk*( mfsq* sqrt(s* (-4.0_rk*mfsq+s))*(-2.0_rk*masq*sqrt(1.0_rk-(4.0_rk* mfsq)/s)*s+(masq*masq-4.0_rk*masq*mfsq+s*s)* &
-                  log((-2.0_rk*mfsq+s+sqrt(1.0_rk-(4.0_rk*mfsq)/s)*s)/(2.0_rk*mfsq))))/(4.0_rk*pi*sqrt(1.0_rk-(4.0_rk*mfsq)/s)*((masq-s)*(masq-s))**(1.5)*s)
+    !sigma_agff = gaff*gaff*nc*2.0_rk*mfsq*( mfsq* sqrt(s* (-4.0_rk*mfsq+s))*(-2.0_rk*masq*sqrt(1.0_rk-(4.0_rk* mfsq)/s)*s+(masq*masq-4.0_rk*masq*mfsq+s*s)* &
+    !              log((-2.0_rk*mfsq+s+sqrt(1.0_rk-(4.0_rk*mfsq)/s)*s)/(2.0_rk*mfsq))))/(4.0_rk*pi*sqrt(1.0_rk-(4.0_rk*mfsq)/s)*((masq-s)*(masq-s))**(1.5)*s)
+    sigma_agff = (gaff*gaff*mfsq*Sqrt(s*(-4.0_rk*mfsq + s))*(-2.0_rk*masq*Sqrt(1.0_rk - (4.0_rk*mfsq)/s)*s + (masq*masq - 4.0_rk*masq*mfsq + s*s)*&
+                Log((-2.0_rk*mfsq + s + Sqrt(1.0_rk - (4.0_rk*mfsq)/s)*s)/(2.0_rk*mfsq))))/(8.0_rk*Pi*Sqrt(1.0_rk - (4.0_rk*mfsq)/s)*((masq - s)**2)**1.5*s)
     return
   end function sigma_agff
 
-  real(kind=rk) function sigma_ffag(s, mfi, ma, gaff)
+  real(kind=rk) function sigma_ffag(s, mfi,nc, ma, gaff)
     implicit none
-    real(kind=rk), intent(in)         :: s, mfi, ma, gaff
+    real(kind=rk), intent(in)         :: s, mfi, ma, gaff, nc
     real(kind=rk)                     :: masq, mfsq
 
     masq = ma*ma
     mfsq = mfi*mfi
-    sigma_ffag = gaff*gaff*2.0_rk*( mfsq* sqrt(s* (-4.0_rk*mfsq+s))*(-2.0_rk*masq*sqrt(1.0_rk-(4.0_rk* mfsq)/s)*s+(masq*masq-4.0_rk*masq*mfsq+s*s)* &
+    sigma_ffag = gaff*gaff/nc*2.0_rk*( mfsq* sqrt(s* (-4.0_rk*mfsq+s))*(-2.0_rk*masq*sqrt(1.0_rk-(4.0_rk* mfsq)/s)*s+(masq*masq-4.0_rk*masq*mfsq+s*s)* &
                   log((-2.0_rk*mfsq+s+sqrt(1.0_rk-(4.0_rk*mfsq)/s)*s)/(2.0_rk*mfsq))))/(4.0_rk*pi*sqrt(1.0_rk-(4.0_rk*mfsq)/s)*((masq-s)*(masq-s))**(1.5)*s)/(-4.0_rk*mfsq+s)*(-4.0_rk*masq+s)
     !sigma_agff = 2.0_rk*( mfsq* sqrt(s* (-4.0_rk*mfsq+s))*(-2.0_rk*masq*sqrt(1.0_rk-(4.0_rk* mfsq)/s)*s+(masq*masq-4.0_rk*masq*mfsq+s*s)* &
     !              log((-2.0_rk*mfsq+s+sqrt(1.0_rk-(4.0_rk*mfsq)/s)*s)/(2.0_rk*mfsq))))/(4.0_rk*pi*sqrt(1.0_rk-(4.0_rk*mfsq)/s)*((masq-s)*(masq-s))**(1.5)*s)
@@ -131,9 +135,9 @@ contains
     return
   end function sigma_afgf
 
-  real(kind=rk) function sigma_agff_th(s, mfi, ma, mg, gaff)
+  real(kind=rk) function sigma_agff_th(s, mfi,nc, ma, mg, gaff)
     implicit none
-    real(kind=rk), intent(in)         :: s, mfi, ma, mg, gaff
+    real(kind=rk), intent(in)         :: s, mfi, ma, mg, gaff, nc
     real(kind=rk)                     :: masq, mfsq, mgsq
 
     masq = ma*ma
@@ -151,7 +155,7 @@ contains
 !                  Sqrt(1.0_rk - (4.0_rk* mfsq)/s)*(masq + mgsq - s)*s*&
 !                  Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - 2.0_rk* masq*(mgsq + s))))
 
-  sigma_agff_th = -0.5_rk*(gaff*gaff*((masq*(2.0_rk*mfsq + mgsq)*&
+  sigma_agff_th = -(gaff*gaff*mfsq*nc*((masq*(2.0_rk*mfsq + mgsq)*&
                   (masq + mgsq - s)*Sqrt(s*(-4.0_rk*mfsq + s)))/&
                   ((mfsq*(masq - mgsq)*(masq - mgsq) + masq*mgsq*s - &
                   2.0_rk*mfsq*(masq + mgsq)*s + mfsq*s*s)*Sqrt(masq*masq &
@@ -163,25 +167,18 @@ contains
                    *Sqrt(masq*masq + (mgsq - s)*(mgsq - s) - &
                    2.0_rk*masq*(mgsq + s)))/(-masq - mgsq + s))))/(masq*masq + &
                    (mgsq - s)*(mgsq - s) - 2.0_rk*masq*(mgsq + s))))/(masq + mgsq - s)
-                  !*mfsq*alpha*q_f*qf*nc
-!    sigma_agff_th = (gaff*gaff)/(16.0_rk*pi*pi)*&
-!                  sqrt(lambda(s,mfsq,mfsq)/lambda(s,masq,mgsq))*1.0_rk/(masq+mgsq-s)*&
-!                  ((masq*masq-4.0_rk* masq *mfsq+(mgsq-s)*(mgsq-s))/(sqrt(lambda(s,masq,mgsq)*(s*(s-4.0_rk* mfsq)))*&
-!                  log((sqrt(s)*(masq+mgsq-s)-sqrt(lambda(s,masq,mgsq))*&
-!                  sqrt(s-4.0_rk* mfsq))/(sqrt(s)*(masq+mgsq-s)+sqrt(lambda(s,masq,mgsq))*&
-!                  sqrt(s-4*mfsq)))+(masq *(mgsq+2.0_rk* mfsq)*(masq+mgsq-s))&
-!                  /((masq-mgsq)*(masq-mgsq)*mfsq+masq*mgsq-2.0_rk*(masq+mgsq)*mfsq*s+mfsq*s*s)))
+                  !*alpha*q_f*qf*nc
     return
   end function sigma_agff_th
 
-  real(kind=rk) function sigma_ahff(s, mfi, ma, gaff)
+  real(kind=rk) function sigma_ahff(s, mfi, nc, ma, gaff)
     implicit none
-    real(kind=rk), intent(in)   :: s, mfi, ma, gaff
+    real(kind=rk), intent(in)   :: s, mfi, ma, gaff, nc
     real(kind=rk)               :: masq, mhsq
 
     mhsq = mh*mh
     masq = ma*ma
-    sigma_ahff = (gaff*gaff*Sqrt((-4.0_rk*mfi*mfi*s + s*s)/&
+    sigma_ahff = (gaff*gaff*mfi*mfi*nc*Sqrt((-4.0_rk*mfi*mfi*s + s*s)/&
                   (masq*masq - 2.0_rk*masq*mhsq + mhsq*mhsq - 2.0_rk*masq*s&
                    - 2.0_rk*mhsq*s + s*s)))/(8.0_rk*pi*v*v)
 
@@ -242,9 +239,8 @@ real(kind=rk) function sigma_afgf_th(s, mfi, ma, mg, gaff, argsint)
   argsint%s = s
   call qags(M2_afgf_th,argsint,-1.0_rk,&
             1.0_rk, epsabs, epsrel, result, abserr, neval, ier)
-  ! * 2*pi??
   !if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma, " fermion=", i
-  sigma_afgf_th = argsint%g*argsint%g*sqrt(lambda(s,mfsq,mgsq)/lambda(s,mfsq,masq))/32.0_rk/pi/s*result
+  sigma_afgf_th = argsint%g*argsint%g*sqrt(lambda(s,mfsq,mgsq)/lambda(s,mfsq,masq))/64.0_rk/pi/pi/s*result
   return
 end function sigma_afgf_th
 
@@ -266,7 +262,7 @@ real(kind=rk) function M2_afgf_th(ctheta, argsint)
   cthetasq = ctheta*ctheta
   mfsqmsq = (mfsq - s)*(mfsq - s)
 
-  M2_afgf_th = -mfsq*(masq*masq*masq*(-(mgsq*mgsq*mgsq*((1.0_rk+ 3.0_rk*cthetasq)*mfsq + s - cthetasq*s)) + &
+  M2_afgf_th = -mfsq*2.0_rk*4.0_rk*pi*(masq*masq*masq*(-(mgsq*mgsq*mgsq*((1.0_rk+ 3.0_rk*cthetasq)*mfsq + s - cthetasq*s)) + &
                 mgsq*mgsq*((3 + 9*cthetasq)*mfsq*mfsq - 2.0_rk*(1.0_rk+ cthetasq)*mfsq*s - &
                 (5.0_rk + 3.0_rk*cthetasq)*ssq) + &
                 mgsq*(-3.0_rk*(1.0_rk+ 3.0_rk*cthetasq)*mfsq*mfsq*mfsq + &

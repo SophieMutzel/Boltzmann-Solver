@@ -35,7 +35,7 @@ subroutine choose_regime(params, argsint)
     else
       allocate(Tprime(2,nT))
       !Tprime(2,:) = (/0.1_rk,1.0_rk,10.0_rk,100.0_rk,500.0_rk/)
-      call linspace(-1.0_rk, 2.7_rk, Tprime(2,:))
+      call linspace(-2.0_rk, log10(T_RH)-0.2_rk, Tprime(2,:))
       Tprime(2,:) = 10.0_rk**Tprime(2,:)
       allocate(argsint%drhoa(2,size(params%drhoa(1,:))))
       argsint%drhoa = params%drhoa

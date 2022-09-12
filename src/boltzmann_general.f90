@@ -46,15 +46,18 @@ program main
   call ini_cons_to_params( params, argsint )
   argsint%mx = params%mx
   argsint%ma = params%ma
+!  argsint%ma=2.5_rk
+!  argsint%mg=12.0_rk
+!  argsint%mf=14.0_rk
+!  argsint%s=2200.0_rk
+!  test= sigma_xxff(2200.0_rk, 14.0_rk, 3.0_rk, 1.3_rk, 0.7_rk, 1.0_rk)
+!  write(*,*) test
 
-  test= sigma_agff_th(1000.0_rk, 12.0_rk, 4.0_rk, 6.0_rk, 1.0_rk)
-  write(*,*) test*12.0_rk*12.0_rk
-
-  params%N = 1_ik
-  allocate(params%gaff(params%N))
-  allocate(params%gaxx(params%N))
-  call freeze_in_grid(params, argsint)
-  stop
+!  params%N = 1_ik
+!  allocate(params%gaff(params%N))
+!  allocate(params%gaxx(params%N))
+!  call freeze_in_grid(params, argsint)
+!  stop
   ! create parameter struct
   if (params%grid) then
     params%N = 1_ik
@@ -101,14 +104,13 @@ program main
 !  call linspace(0.0_rk, 4.0_rk, stest)
 !  argsint%g = 1.0_rk
 !  do i=1,100
-!    call gamma_r_new( 10**stest(i), argsint, "xxff", test )
+!    call gamma_r_new( 10**stest(i), argsint, "xxffth", test )
 !    !test= gammav(10**stest(i), argsint, "affth")
 !    !call gamma_r_new( 10**stest(i), argsint, "afgfth", s )
 !    !test=sigma_agff(10**stest(i), 173.0_rk, 1.0_rk, 1.0_rk)!sigma_agff_th(10**stest(i),mq_th(10**stest(i),173.0_rk,2.0_rk/3.0_rk),1.0_rk,mgamma_th(10**stest(i)),1.0_rk)
 !    write(*,*) 10**stest(i), test
 !  end do
 !  stop
-
 
   OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=dz,HMAX=0.001_rk,MXSTEP=100000)
   itask = 1
@@ -124,7 +126,7 @@ program main
   Tprime = 1.0_rk
   check = .true.
   eps_old=1.0_rk
-  do while ( z<=params%z_max .and. eps > conv_eps  .or. Tprime>params%mx/40.0_rk )
+  do while ( z<=1.0_rk)!z<=params%z_max .and. eps > conv_eps  .or. Tprime>params%mx/40.0_rk )
     call rhs_contributions_general( nrhs*params%N, z, Y, params, argsint, rhs(:,:,it))
     it = it + 1
     zpdz = z + params%dz_plot
@@ -165,7 +167,7 @@ program main
     !if (q_tot(nrhs+3,1,it)<q_tot(nrhs+3,1,it-1)) argsint%helper = .true.
     !eps = max(abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it-1)),abs((q_tot(3,1,it)-q_tot(3,1,it-1))/q_tot(3,1,it-1)))
     eps = abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it))
-    write(*,*) z, eps, Tprime!q_tot(2,1,it), q_tot(4,1,it)
+    !write(*,*) z, eps, Tprime!q_tot(2,1,it), q_tot(4,1,it)
   end do
   !call check_BBN(q,T,params)
   if (rank==0) then
@@ -175,20 +177,21 @@ program main
   q_tot(nrhs+1:nrhs+3,:,1:it)=log10(q_tot(nrhs+1:nrhs+3,:,1:it))
   ! DM density today
   n0 = omegax*rhocrit/params%mx
-  !write(*,*) log10(10.0**q(1,1)/ent(T,params)*s0*params%mx/rhocrit)
+  !write(*,*) 10.0**q(1,1)/ent(T,params)*s0*params%mx/rhocrit, log10(n0/s0*ent(T,params)/s/2.0_rk)
+  write(*,*) q_tot(2,1,it), log10(n0/s0*ent(T,params)/s/2.0_rk)
   ! write results to file
   open (unit=97, file="temp/final_7_12_2021.txt", status='old', action='write', position='append', iostat=io_error)
   do i=1,params%N
     !call write_matrix("temp/"//exp2str(params%gaff(i))//exp2str(params%gaxx(i))//".txt",q_tot(:,i,:))
-!    call write_matrix("temp/"//trim(adjustl(params%file))//".txt",q_tot(:,i,1:it))
+    call write_matrix("temp/"//trim(adjustl(params%file))//".txt",q_tot(:,i,1:it))
     call write_matrix("temp/rhs_"//trim(adjustl(params%file))//".txt",rhs(:,i,1:it-1))
 !   !call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),Yxmxobs/params%mx, params%regime)
-!    call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),log10(n0/s0*ent(T,params)/s/2.0_rk), params%regime)
+    call write_gnuplot(98, "temp/"//trim(adjustl(params%file)),log10(n0/s0*ent(T,params)/s/2.0_rk), params%regime)
     call write_gnuplot_rhs(99, "temp/rhs_"//trim(adjustl(params%file)))
     if (io_error==0) then
       !write(97,*) params%gaxx(i)*params%gaff(i), params%gaxx(i), q_tot(2,i,it)
       !write(97,*) params%ma, params%gaff(i), params%gaxx(i), 10.0**q(1,i)/ent(T,params)*s0*params%mx/rhocrit!q_tot(2,i,it)
-      write(97,*) params%gaff(i)*params%gaxx(i), params%gaxx(i), 10.0**q(1,i)/ent(T,params)*s0*params%mx/rhocrit!q_tot(2,i,it)
+      !write(97,*) params%gaff(i)*params%gaxx(i), params%gaxx(i), 10.0**q(1,i)/ent(T,params)*s0*params%mx/rhocrit!q_tot(2,i,it)
       !write(97,*) 10.0**q(2,i)/ent(T,params), params%ma, params%gaff(i), params%gaxx(i)
     else
       write(*,*) 'error', io_error,' while opening the file temp/in_n.txt'

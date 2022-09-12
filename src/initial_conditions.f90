@@ -61,12 +61,13 @@ subroutine initial_conditions( params, q, q_tot, rhs, argsint )
       allocate(argsint%drhoa(2,size(params%drhoa(1,:))))
       epsabs=1e-30_rk
       epsrel=1e-30_rk
-      params%z_start = -2.5_rk
+      params%z_start = log10(params%mx/T_RH)+0.1_rk!-2.5_rk
       Tprime=1000000.0_rk
       argsint%drhoa = params%drhoa
-      do while (Tprime>params%mx)
+      do while (Tprime>10.0_rk*params%mx)
         params%z_start = params%z_start+0.2_rk
         T_start = params%mx/10**params%z_start
+        write(*,*) T_start
         call qags(rhop_over_rho,argsint,T_RH,&
               T_start, epsabs, epsrel, rar, abserr, neval, ier)
         if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "for initial condition"
@@ -95,6 +96,7 @@ subroutine initial_conditions( params, q, q_tot, rhs, argsint )
         ! Y_a=Yeq,a(T')
         q(2,i) = neq(Tprime, params%ma, ga)
         q(3,i) = Tprime
+        write(*,*) q, params%z_start
       end do
       params%z_max =  3.0_rk
       deallocate(argsint%drhoa)
@@ -164,7 +166,7 @@ subroutine initial_conditions( params, q, q_tot, rhs, argsint )
   L = int((params%z_max-params%z_start)/params%dz_plot)+50
 
   allocate(q_tot(nrhs+5,params%N,L+5))
-  allocate(rhs(nrhs+5,params%N,L+5))
+  allocate(rhs(nrhs+6,params%N,L+5))
 
   s = T_start*T_start*T_start!ent(T_start, params)
   q_tot(1,:,1) = params%z_start

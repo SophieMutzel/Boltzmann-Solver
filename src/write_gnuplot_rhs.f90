@@ -23,7 +23,9 @@ subroutine write_gnuplot_rhs(unit_number, filename)
     write(unit_number,*)  "'", filename, ".txt' using 1:4 with lines ls   3 title '$\langle \sigma v_{aa \leftrightarrow \chi \bar\chi}\rangle n_a$', \"!'SM $\rightarrow \chi$', \"
     write(unit_number,*)  "'", filename, ".txt' using 1:5 with lines ls   4 title '$\langle \sigma v_{a\chi \leftrightarrow a \chi}\rangle n_a$', \"!'$3 H n_\chi$', \"
     write(unit_number,*)  "'", filename, ".txt' using 1:6 with lines ls   5 title '$\langle \sigma v_{\chi\bar\chi \leftrightarrow f \bar f}\rangle n_\chi$', \"!'$3 H n_a$', \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:6 with lines ls   5 dashtype 2 title '$\langle \sigma v_{\chi\bar\chi \leftrightarrow f \bar f}\rangle n_\chi$', \"!'$3 H n_a$', \"
     write(unit_number,*)  "'", filename, ".txt' using 1:7 with lines ls   6 title '$\langle \sigma v_{a SM \leftrightarrow SM SM}\rangle n_{SM}$', \"!'SM $\rightarrow a$', \"
+    write(unit_number,*)  "'", filename, ".txt' using 1:7 with lines ls   6 dashtype 2 title '$\langle \sigma v_{a SM \leftrightarrow SM SM}\rangle n_{SM}$', \"!'SM $\rightarrow a$', \"
   else
     write(*,*) 'error', io_error,' while opening the file ', filename
   end if

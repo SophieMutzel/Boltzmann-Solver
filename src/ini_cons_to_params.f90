@@ -4,7 +4,7 @@ subroutine ini_cons_to_params( params, argsint )
   ! user defined parameter structure
   type (type_params), intent(inout)            :: params
   type (type_argsint), intent(inout)           :: argsint
-  real(kind=rk), dimension(:,:), allocatable   :: fgfa
+  real(kind=rk), dimension(:,:), allocatable   :: fgfa, ffha
   character(len=16)                            :: stmx, stma
   integer(kind=ik)                             :: n, i, nc
   real(kind=rk)                                :: xmin,xmax,ymin,ymax
@@ -31,10 +31,16 @@ subroutine ini_cons_to_params( params, argsint )
 !  deallocate(points)
 
    !call read_matrix_from_file(trim(params%ini_direc)//'rhoprho59.txt', params%rhoa_rho, 2, .false.)
-   call read_matrix_from_file(trim(params%ini_direc)//'drhop09thlogT.txt', params%drhoa, 2, .false.)
-   call read_matrix_from_file(trim(params%ini_direc)//'drhopfgfa09th.txt', fgfa, 2, .false.)
-   params%drhoa(2,:) = params%drhoa(2,:) + 2.0_rk*fgfa(2,:)
-   deallocate(fgfa)
+
+
+   !call read_matrix_from_file(trim(params%ini_direc)//'drhop09thlogT.txt', params%drhoa, 2, .false.)
+   !call read_matrix_from_file(trim(params%ini_direc)//'drhopfgfa09th.txt', fgfa, 2, .false.)
+
+   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dttga09thlogT.txt', params%drhoa, 2, .false.)
+   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dtgta09thlogT.txt', fgfa, 2, .false.)
+   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dttha09thlogT.txt', ffha, 2, .false.)
+   params%drhoa(2,:) = params%drhoa(2,:) + 2.0_rk*fgfa(2,:) + ffha(2,:)
+   deallocate(fgfa,ffha)
    !call read_matrix_from_file(trim(params%ini_direc)//'drhop09.txt', params%drhoa, 2, .false.)
 
 end subroutine ini_cons_to_params

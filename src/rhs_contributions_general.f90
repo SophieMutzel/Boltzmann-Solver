@@ -12,7 +12,8 @@ subroutine rhs_contributions_general( N, lz, Y, params, argsint, rhs )
   real(kind=rk)                               :: sv_agff, sv_afgf, sv_xxff
   integer(kind=ik)                            :: ier, i, neval,nd, nz
   real(kind=rk), dimension(params%N)          :: Tp, sv_aaxx, sv_xxaa, sv_axax,neqzp, neqazp
-  real(kind=rk), dimension(params%N)          :: gam_agff, gam_afgf, gam_xxff, ffa
+  real(kind=rk), dimension(params%N)          :: gam_agff, gam_afgf, gam_xxff, ffa, gam_ahff
+  real(kind=rk), dimension(params%N)          :: gam_agffnoFT, gam_afgfnoFT, gam_xxffnoFT
   real(kind=rk)                               :: rhoeqneqa,rhoeqneqDM, drhoa
   real(kind=rk)                               :: rhoeqaTp, rhoeqDMTp, peqaTp, peqDMTp,rhoplusp, rhs_a, rhs_DM
 
@@ -52,21 +53,28 @@ subroutine rhs_contributions_general( N, lz, Y, params, argsint, rhs )
     ! SM axion interaction
     !argsint%g = params%gaff(i)
     call gamma_r_new( T, argsint, "agffth", gam_agff(i) )
-    !call gamma_r_new( T, argsint, "agff", gam_agff(i) )
+    call gamma_r_new( T, argsint, "agff", gam_agffnoFT(i) )
     gam_agff(i) = gam_agff(i)*params%gaff(i)*params%gaff(i)
+    gam_agffnoFT(i) = gam_agffnoFT(i)*params%gaff(i)*params%gaff(i)
     !gam_afgf(i) = 0.0_rk
-    !call gamma_r_new( T, argsint, "afgfth", gam_afgf(i) )
-    nz = size(params%gam_afgf,2)
-    call interp_linear(nz, params%gam_afgf(1,:),params%gam_afgf(2,:),lz, gam_afgf(i))
+    call gamma_r_new( T, argsint, "afgfth", gam_afgf(i) )
+    call gamma_r_new( T, argsint, "afgf", gam_afgfnoFT(i) )
+    !nz = size(params%gam_afgf,2)
+    !call interp_linear(nz, params%gam_afgf(1,:),params%gam_afgf(2,:),lz, gam_afgf(i))
     gam_afgf(i) = gam_afgf(i)*params%gaff(i)*params%gaff(i)
+    gam_afgfnoFT(i) = gam_afgfnoFT(i)*params%gaff(i)*params%gaff(i)
+    call gamma_r_new( T, argsint, "ahff", gam_ahff(i) )
+    gam_ahff(i) = gam_ahff(i)*params%gaff(i)*params%gaff(i)
     ! SM DM interaction
     !argsint%g = params%gaxx(i)*params%gaff(i)
     call gamma_r_new( T, argsint, "xxffth", gam_xxff(i) )
-    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
+    call gamma_r_new( T, argsint, "xxff", gam_xxffnoFT(i) )
+    gam_xxffnoFT(i) = gam_xxffnoFT(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
 
     ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
   end do
+  write(*,*) lz, (gam_afgf-gam_afgfnoFT)/gam_afgf, (gam_agff-gam_agffnoFT)/gam_agff, (gam_xxff-gam_xxffnoFT)/gam_xxff
   ! Y_x
 !  do i=1,params%N
 !    neqzp(i) = neq(Tp(i), params%mx, gDM)
@@ -79,6 +87,8 @@ subroutine rhs_contributions_general( N, lz, Y, params, argsint, rhs )
   rhs(5,:) = sv_axax*10**q(2,:)!neqazp(:)!10**q(2,:) ! or nx? would have to be nx for na equation
   rhs(6,:) = gam_xxff/neq(T, params%mx, gDM)!10**q(1,:)!/
   rhs(7,:) = (gam_agff + 2.0_rk*gam_afgf) /neq(T, params%ma, ga) + ffa
+  rhs(8,:) = gam_ahff/neq(T, params%ma, ga)
+
   !write(*,*) gam_agff, neqazp, ffa, 2.0_rk*gam_afgf
             !  +ffa*neqazp
 !  rhs(1,:) = lz

@@ -7,7 +7,7 @@ real(kind=rk)                           :: T_start, abserr, rar, Tmx, gaffmin, g
 real(kind=rk)                           :: gaffnew, z, zpdz, atol, conv_eps, dz, eps, rtol, T
 real(kind=rk)                           :: epsabs, epsrel, gam_xxff, gam_agff, ffa, sv_aaxx, ma, mx, e,gam_afgf, gam_ahff
 integer(kind=ik)                        :: i, ier, neval, nT=51, j
-real(kind=rk),dimension(29)             :: mavals
+real(kind=rk),dimension(33)             :: mavals
 integer(kind=ik)                        :: io_error, istate, nd, k, ierr, itask
 TYPE(VODE_OPTS)                         :: OPTIONS
 real(kind=rk), dimension(1)             :: Y,Ynew
@@ -17,18 +17,19 @@ real(kind=rk), dimension(1)             :: Y,Ynew
   allocate(Tprime(2,nT))
 
 
-  mavals=(/0.00131826, 0.00158489, 0.00251189, 0.00398107, 0.00630957, 0.01, &
+  mavals=(/0.0000501187, 0.0000794328, 0.000125893, 0.000199526, 0.000316228, &
+        0.000501187, 0.000794328,0.00131826, 0.00158489, 0.00251189, 0.00398107, 0.00630957, 0.01, &
         0.0158489, 0.0251189, 0.0398107, 0.0630957, 0.1, 0.158489, 0.251189, &
         0.398107, 0.630957, 1., 1.58489, 2.51189, 3.98107, 6.30957, 10., &
-        15.8489, 25.1189, 39.8107, 63.0957, 100., 158.489, 251.189, 398.107/)
+        15.8489, 25.1189, 39.8107, 63.0957, 100./)
   !call linspace(-1.0_rk, 2.7_rk, Tprime(2,:))
   !Tprime(2,:) = 10.0_rk**Tprime(2,:)
   argsint%g = 1.0_rk
   epsabs=1e-30_rk
   epsrel=1e-30_rk
   argsint%drhoa = params%drhoa
-  do e=-2.0_rk,1.0_rk,0.02_rk!i=1,29!!i=23,29!-4.3_rk,-4.0_rk,0.05_rk!
-    ma = 10.0_rk**e!mavals(i)!
+  do i=23,23!-4.3_rk,2.05_rk,0.05_rk!i=1,29!!i=23,29!-4.3_rk,-4.0_rk,0.05_rk!i=1,size(mavals)!
+    ma = mavals(i)!10.0_rk**e!
     mx = 10.0_rk*ma
     params%ma = ma
     argsint%ma = ma
@@ -41,6 +42,7 @@ real(kind=rk), dimension(1)             :: Y,Ynew
     call gamma_r_new( mx, argsint, "ahff", gam_ahff )
 
     gaffmin = log10(sqrt(Hub(mx,0.0_rk)/(gam_agff/neq(mx,ma,ga)+ 2.0_rk*gam_afgf/neq(mx,ma,ga)+ffa+gam_ahff/neq(mx,ma,ga))))
+    if (gaffmin>-2.0_rk) gaffmin=-6.0_rk
     gaffminmin=gaffmin
     gaffnew = gaffmin
     do while (gaffminmin<=gaffnew .and. gaffnew>-10.0_rk)
@@ -71,8 +73,10 @@ real(kind=rk), dimension(1)             :: Y,Ynew
     end do
     params%gaff(1) = 10.0_rk**gaffnew
     Y=0.0_rk
-    z = log10(mx/600.0_rk)!-1.9_rk!log10(0.1_rk)
-    write(*,*) z
+    z = log10(mx/T_RH)!-1.9_rk!log10(0.1_rk)
+    write(*,*) z, params%gaff(1)
+    params%gaff(1) = 3.6059061048787874E-009_rk
+    write(*,*) z, params%gaff(1)
     atol = 1e-5_rk ! absolute tolerance
     rtol = 1e-2_rk ! relative tolerance
 
