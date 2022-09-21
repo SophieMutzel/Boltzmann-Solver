@@ -71,82 +71,33 @@ real(kind=rk), dimension(1)             :: Y,Ynew
         z = zpdz
       end do
     end do
-    params%gaff(1) = 10.0_rk**gaffnew
-    Y=0.0_rk
-    z = log10(mx/T_RH)!-1.9_rk!log10(0.1_rk)
-    write(*,*) z, params%gaff(1)
-    params%gaff(1) = 3.6059061048787874E-009_rk
-    write(*,*) z, params%gaff(1)
-    atol = 1e-5_rk ! absolute tolerance
-    rtol = 1e-2_rk ! relative tolerance
-
-    OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=params%dz,HMAX=0.01_rk,MXSTEP=1000000)
-    itask = 1
-    istate = 1
-    do while ( z<0.0_rk )!.or. eps > conv_eps )
-      zpdz = z + params%dz_plot
-      call boltzmann_axion(1, zpdz, Y, Ynew, params, argsint)
-      CALL VODE_F90( boltzmann_axion, 1, Y, z, zpdz, itask, &
-                  istate, OPTIONS, params, argsint )
-      T = mx/10**z
-      write(*,*) z, Y(1)/T/T/T, neq(mx/10**z,ma,ga)/T/T/T
-      !eps = abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it))
-
-      z = zpdz
-    end do
-    stop
-
-
-!    call linspace(log10(mx), log10(30.0_rk*mx), Tprime(2,:))
-!!    call linspace(log10(mx), log10(mx/10**(-1.9_rk)), Tprime(2,:))
-!    Tprime(2,:) = 10.0_rk**Tprime(2,:)
-!    gaffminmin=1.0_rk
-!    do j=1,nT
-!      call gamma_r_new(Tprime(2,j), argsint, "agffth", gam_agff )
-!      !write(*,*) gam_agff
-!      ! inverse decay a->ff
-!      ffa = gammav(Tprime(2,j), argsint, "affth")
-!      !write(*,*) ffa
-!      call gamma_r_new( Tprime(2,j), argsint, "afgfth", gam_afgf )
-!      write(*,*) log10(mx/Tprime(2,j)), Hub(Tprime(2,j),0.0_rk), 10**(2.0_rk*gaffmin)*(gam_agff/neq(Tprime(2,j),ma,ga)+ 2.0_rk*gam_afgf/neq(Tprime(2,j),ma,ga)+ffa)
-!      !gaffmin = log10(sqrt(Hub(Tprime(2,j),0.0_rk)/(gam_agff/neq(Tprime(2,j),ma,ga)+ 2.0_rk*gam_afgf/neq(Tprime(2,j),ma,ga)+ffa)))
-!      if (gaffmin<gaffminmin) then
-!        gaffminmin=gaffmin
-!        !write(*,*) gaffmin, Tprime(2,j), mx
-!      end if
-!    end do
-
-!    call gamma_r_new(mx, argsint, "agffth", gam_agff )
-!    ! inverse decay a->ff
-!    ffa = gammav(mx, argsint, "affth")
-!    call gamma_r_new( mx, argsint, "afgfth", gam_afgf )
-!    !gam_afgf = 0.0_rk
-!    gaffmin = log10(sqrt(Hub(mx,0.0_rk)/(gam_agff/neq(mx,ma,ga)+ 2.0_rk*gam_afgf/neq(mx,ma,ga)+ffa)))
-!rhoeq(ma,ma,ga)
-!    call linspace(gaffmin,0.0_rk,gaff)
-!    call gamma_r_new( mx, argsint, "xxffth", gam_xxff )
+!    params%gaff(1) = 10.0_rk**gaffnew
+!    Y=0.0_rk
+!    z = log10(mx/T_RH)!-1.9_rk!log10(0.1_rk)
+!    write(*,*) z, params%gaff(1)
+!    params%gaff(1) = 3.6059061048787874E-009_rk
+!    write(*,*) z, params%gaff(1)
+!    atol = 1e-5_rk ! absolute tolerance
+!    rtol = 1e-2_rk ! relative tolerance
 !
-!    call sigmav( mx, params, argsint, "aaxx", sv_aaxx )
+!    OPTIONS = SET_OPTS(DENSE_J=.TRUE.,RELERR=RTOL,ABSERR=ATOL,H0=params%dz,HMAX=0.01_rk,MXSTEP=1000000)
+!    itask = 1
+!    istate = 1
+!    do while ( z<0.0_rk )!.or. eps > conv_eps )
+!      zpdz = z + params%dz_plot
+!      call boltzmann_axion(1, zpdz, Y, Ynew, params, argsint)
+!      CALL VODE_F90( boltzmann_axion, 1, Y, z, zpdz, itask, &
+!                  istate, OPTIONS, params, argsint )
+!      T = mx/10**z
+!      write(*,*) z, Y(1)/T/T/T, neq(mx/10**z,ma,ga)/T/T/T
+!      !eps = abs((q_tot(2,1,it)-q_tot(2,1,it-1))/q_tot(2,1,it))
 !
-!    do i=1,nT
-!      params%gaff(1)=10.0_rk**gaff(i)
-!      gaxxmaxSMx = log10(sqrt(Hub(mx,rhoeq(mx,ma,ga))/&
-!                  (params%gaff(1)*params%gaff(1)*gam_xxff/neq(mx,mx,ga))))
-!!      do j=1,nT
-!!        call qags(rhop_over_rho,argsint,T_RH,&
-!!                  Tprime(2,j), 1e-5_rk, 1e-5_rk, rar, abserr, neval, ier)
-!!        Tprime(1,j) = Ta(Tprime(2,j),params,rar)
-!!      end do
-!!      call interp_linear(nT, Tprime(1,:),Tprime(2,:),mx, Tmx)
-!      ! neq,a(z')
-!      gaxxmaxax = log10(sqrt(sqrt(Hub(mx/10.0_rk,rhoeq(mx,mx,gDM)+rhoeq(mx,ma,ga))/&
-!                  (sv_aaxx*neq(mx,ma,ga)))))
-!      gaxxmax(i) = min(gaxxmaxax,gaxxmaxSMx)
-!      !write(*,*) ma, mx, gaff(i), gaxxmax(i)
+!      z = zpdz
 !    end do
-    write(*,*) ma, gaffminmin!gaff(1), maxval(gaxxmax)
+!    stop
+    write(*,*) ma, gaffminmin
   end do
 
-  !deallocate(argsint%drhoa, Tprime, gaxxmax,gaff)
+  deallocate(argsint%drhoa, Tprime, gaxxmax,gaff)
 
 end subroutine freeze_in_grid

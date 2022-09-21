@@ -1,3 +1,4 @@
+! write preface for gnuplot file which plots evolution of rhs terms
 subroutine write_gnuplot_rhs(unit_number, filename)
   implicit none
   character(len=*), intent(in)      :: filename

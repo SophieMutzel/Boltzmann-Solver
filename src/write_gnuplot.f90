@@ -1,3 +1,4 @@
+! write preface for gnuplot file which plots evolution of DM, ALP densities
 subroutine write_gnuplot(unit_number, filename, Yobs, regime)
   implicit none
   character(len=*), intent(in)      :: filename

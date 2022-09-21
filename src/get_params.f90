@@ -1,3 +1,4 @@
+! get input parameters from user
 subroutine get_params(params)
   use f90getopt
   implicit none

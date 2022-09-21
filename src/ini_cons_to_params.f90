@@ -1,3 +1,4 @@
+! read drho'/drho for initial condition which was calculated in Mathematica
 subroutine ini_cons_to_params( params, argsint )
   implicit none
 
@@ -12,12 +13,21 @@ subroutine ini_cons_to_params( params, argsint )
   write(stmx,'(F12.4)') params%mx
   write(stma,'(F12.4)') params%ma
 
+  ! HS degrees of freedom
   allocate(params%geff_HS(2,100),params%heff_HS(2,100))!,params%B(500))!,params%C(500),params%D(500))
   call heffHS(params, argsint, params%heff_HS)
   ! have to call heffHS first!
   call geffHS(params, argsint, params%geff_HS)
 
-  ! for bezier fit to geff
+   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dttga09thlogT.txt', params%drhoa, 2, .false.)
+   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dtgta09thlogT.txt', fgfa, 2, .false.)
+   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dttha09thlogT.txt', ffha, 2, .false.)
+   params%drhoa(2,:) = params%drhoa(2,:) + 2.0_rk*fgfa(2,:) + ffha(2,:)
+   deallocate(fgfa,ffha)
+   !call read_matrix_from_file(trim(params%ini_direc)//'drhop09.txt', params%drhoa, 2, .false.)
+
+end subroutine ini_cons_to_params
+! for bezier fit to geff
 !  nc = size(params%geff(1,:))
 !  n = size(params%geff(1,1:nc:3))
 !  allocate(params%A(n-1,2),params%B(n-1,2),points(n,2))
@@ -30,17 +40,8 @@ subroutine ini_cons_to_params( params, argsint )
 !  call get_bezier_coeff(points,n-1,params%A,params%B)
 !  deallocate(points)
 
-   !call read_matrix_from_file(trim(params%ini_direc)//'rhoprho59.txt', params%rhoa_rho, 2, .false.)
+ !call read_matrix_from_file(trim(params%ini_direc)//'rhoprho59.txt', params%rhoa_rho, 2, .false.)
 
 
-   !call read_matrix_from_file(trim(params%ini_direc)//'drhop09thlogT.txt', params%drhoa, 2, .false.)
-   !call read_matrix_from_file(trim(params%ini_direc)//'drhopfgfa09th.txt', fgfa, 2, .false.)
-
-   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dttga09thlogT.txt', params%drhoa, 2, .false.)
-   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dtgta09thlogT.txt', fgfa, 2, .false.)
-   call read_matrix_from_file('/Users/sophiemutzel/Desktop/Uni/Masterarbeit/Boltzmann_solver/etransfer/dttha09thlogT.txt', ffha, 2, .false.)
-   params%drhoa(2,:) = params%drhoa(2,:) + 2.0_rk*fgfa(2,:) + ffha(2,:)
-   deallocate(fgfa,ffha)
-   !call read_matrix_from_file(trim(params%ini_direc)//'drhop09.txt', params%drhoa, 2, .false.)
-
-end subroutine ini_cons_to_params
+ !call read_matrix_from_file(trim(params%ini_direc)//'drhop09thlogT.txt', params%drhoa, 2, .false.)
+ !call read_matrix_from_file(trim(params%ini_direc)//'drhopfgfa09th.txt', fgfa, 2, .false.)

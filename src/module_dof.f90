@@ -1,43 +1,10 @@
+! effective degrees of freedom (aso for the HS). SM effective dofs are in geff_new.f90
 module module_dof
   use module_precision
   use module_utils
   use module_params
 
   contains
-!    subroutine geffSM(T,params,g)
-!
-!      implicit none
-!      type (type_params), intent(in)      :: params
-!      real(kind=rk), intent(in)           :: T
-!      real(kind=rk), intent(out)          :: g
-!      integer(kind=ik)                    :: nd,n
-!
-!      n = size(params%geff(1,:))
-!      !nd = size(params%geff(1,1:n:3))
-!
-!      if (T > params%geff(1,n)) then
-!        g = params%geff(1,n)
-!      else
-!        call interp_linear(n, params%geff(1,:),params%geff(2,:),T, g)
-!      end if
-!    end subroutine geffSM
-!
-!    subroutine heffSM(T,params,g)
-!
-!      implicit none
-!      type (type_params), intent(in)        :: params
-!      real(kind=rk), intent(in)             :: T
-!      real(kind=rk), intent(out)            :: g
-!      integer(kind=ik)                      :: nd
-!
-!      nd = size(params%heff,2)
-!
-!      if (T > params%heff(1,nd)) then
-!        g = params%heff(1,nd)
-!      else
-!        call interp_linear( nd, params%heff(1,:), params%heff(2,:), T, g )
-!      end if
-!    end subroutine heffSM
     real(kind=rk) function heff(T,params)
 
       implicit none

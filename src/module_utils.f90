@@ -1,3 +1,4 @@
+! useful other routines, like Bessel functions etc.
 module module_utils
 
   use module_precision

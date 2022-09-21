@@ -1,3 +1,4 @@
+! integrate d(rho'/rho)/dT to get initial rho'/rho 
 real(kind=rk) function rhop_over_rho(LT,argsint)
   implicit none
   real(kind=rk), intent(in)         :: LT

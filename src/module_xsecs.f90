@@ -1,3 +1,4 @@
+! cross sections in our model
 module module_xsecs
 
 use module_precision

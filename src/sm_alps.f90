@@ -1,3 +1,4 @@
+! a-SM interaction processes, kernel functions for integration of reaction rates
 real(kind=rk) function kernel_afgf( s, argsint )
   implicit none
     real(kind=rk), intent(in)           :: s

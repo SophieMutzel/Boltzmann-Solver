@@ -1,3 +1,4 @@
+! build grid for phase diagram
 subroutine build_grid(params, argsint, gaff_tot, gaxx_tot)
 implicit none
 type (type_params), intent(inout)       :: params

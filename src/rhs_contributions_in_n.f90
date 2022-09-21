@@ -41,27 +41,22 @@ subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
   ! HS interaction
   do i=1,params%N
     ! DM axion interaction
-    !argsint%g = params%gaxx(i)
     call sigmav( Tp(i), params, argsint, "aaxx", sv_aaxx(i) )
     call sigmav( Tp(i), params, argsint, "xxaa", sv_xxaa(i) )
     sv_aaxx(i) = sv_aaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
     sv_xxaa(i) = sv_xxaa(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
     ! SM axion interaction
-    !argsint%g = params%gaff(i)
     call gamma_r_new( T, argsint, "agffth", gam_agff(i) )
     !call gamma_r_new( T, argsint, "agff", gam_agff(i) )
     gam_agff(i) = gam_agff(i)*params%gaff(i)*params%gaff(i)
-    gam_afgf(i) = 0.0_rk
-    !call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
+    !gam_afgf(i) = 0.0_rk
+    call gamma_r_new( T, argsint, "afgf", gam_afgf(i) )
+    gam_afgf(i) = gam_afgf(i)*params%gaff(i)*params%gaff(i)
     ! SM DM interaction
-    !argsint%g = params%gaxx(i)*params%gaff(i)
     call gamma_r_new( T, argsint, "xxffth", gam_xxff(i) )
-    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
 
     ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
-    !ffa(i) = gammav(T, argsint, "aff")*params%gaff(i)*params%gaff(i)
-    !ffa(i) = 0.0_rk
   end do
   ! Y_x
   do i=1,params%N
@@ -75,19 +70,6 @@ subroutine rhs_contributions_in_n( N, lz, Y, params, argsint, rhs, regime )
   rhs(5,:) = l10*3.0_rk*q(1,:)
   rhs(6,:) = l10*3.0_rk*q(2,:)
   rhs(7,:) = l10*(gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/H
-
-  nd = size(params%drhoa,2)
-  call interp_linear(nd, params%drhoa(1,:),params%drhoa(2,:),log10(T), drhoa)
-  !drhoa = drhoa -  drho_decay(T, params%ma, "ffath")
-
-  write(*,*) lz, T, drhoa, drho_decay(T, params%ma, "ffath")
-
-  !write(*,*) lz, Tp, q(1,:)*q(1,:), neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:),l10*3.0_rk*q(1,:),l10*(sv_xxaa*(-q(1,:)*q(1,:)+neqzp*neqzp/neqazp/neqazp* q(2,:)*q(2,:))/H)
-  !write(*,*) lz, l10*sv_xxaa*q(1,:)*q(1,:)/H, l10*sv_aaxx* q(2,:)*q(2,:)/H
-!  l10*3.0_rk*(rhoeqneq(Tp(1),ma)*q(2,1)),l10*3.0_rk*(rhoeqneq(Tp(1),mx)*q(1,1)), &
-!  rhoeqneq(Tp(1),ma)*rhs_a,rhoeqneq(Tp(1),mx)*rhs_DM, &
-!  q(1,1)*drhoeqneq( Tp(1), mx ), q(2,1)*drhoeqneq( Tp(1), ma ), l10*rhoplusp+rhoeqneq(Tp(1),ma)*rhs_a,&
-!  l10*sv_xxaa*q(1,:)*q(1,:)/H,l10*sv_aaxx*q(2,:)*q(2,:)/H
 
 
 end subroutine rhs_contributions_in_n

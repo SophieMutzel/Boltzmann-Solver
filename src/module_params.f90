@@ -1,3 +1,4 @@
+! parameters needed for calculation
 module module_params
 
   use mpi
@@ -10,7 +11,7 @@ module module_params
   ! global user defined data structure for time independent variables
   type, public :: type_params
 
-    ! masses
+    ! masses of DM and ALP
     real(kind=rk)                                :: mx = 25.0_rk, ma = 5.0_rk
 
     ! regime
@@ -19,6 +20,7 @@ module module_params
     ! couplings
     integer(kind=ik)                             :: N_tot = 1, N
     real(kind=rk), dimension(:), allocatable     :: gaff, gaxx
+    ! kappa = gaxx*gaff
     real(kind=rk), dimension(2)                  :: kappa_range = (/ -13.5, -13.5 /), gaxx_range = (/ -2.18251, -2.18251 /)
 
     ! start, end of simulation

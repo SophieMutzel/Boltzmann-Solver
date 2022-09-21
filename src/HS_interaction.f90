@@ -1,3 +1,5 @@
+! all HS interactions, kernels for reaction rates
+! for small ALP masses have to use Taylor expanded kernel 
 real(kind=rk) function kernel_aaxx( s, argsint )
   implicit none
     real(kind=rk), intent(in)           :: s

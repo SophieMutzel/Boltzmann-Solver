@@ -1,3 +1,4 @@
+! effective degrees of freedom for the SM fields, following K. Saikawa and S. Shirai [1803.01038]
 real(kind=rk) function geff_rho_h(T)
   implicit none
   real(kind=rk), intent(in)     :: T

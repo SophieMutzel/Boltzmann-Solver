@@ -1,3 +1,4 @@
+! equilibrium distributions, using Maxwell-Boltzmann statistics
 real(kind=rk) function neq( T, m, g )
   implicit none
   real(kind=rk), intent(in)           :: T, m, g

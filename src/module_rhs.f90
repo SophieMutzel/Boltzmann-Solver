@@ -1,3 +1,4 @@
+! rhs functions: reaction rates gamma, thermally averaged cross sections
 module module_rhs
 
   use mpi
@@ -301,16 +302,6 @@ module module_rhs
             gam = gam + ga*T/(32.0_rk*pi*pi*pi*pi)*result*mf(i)*mf(i)/argsint%mf/argsint%mf
           end do
         end if
-!      case("aaxx")
-!        call qagi(kernel_aaxx,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-!                  1, epsabs, epsrel, result, abserr, neval, ier)
-!        if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
-!        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
-!      case("xxaa")
-!        call qagi(kernel_xxaa,argsint,max(4.0_rk*mx*mx,4.0_rk*ma*ma),&
-!                  1, epsabs, epsrel, result, abserr, neval, ier)
-!        if (ier > 0) write(*,*) "Integral did not converge ier=", ier, " err=", abserr, "sigma=", sigma
-!        gam = gam + gDM*gDM*T/(32.0_rk*pi*pi*pi*pi)*result
       case default
         write(*,*) "Error! x section ", sigma, " not implemented"
       end select

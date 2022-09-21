@@ -1,4 +1,4 @@
-
+! routines needed to calculate the HS temperature for intial condition
     real(kind=rk) function Taroot(Ta,T,params,rhoprime)
       implicit none
       real(kind=rk), intent(in)           :: Ta, T,rhoprime
@@ -15,23 +15,7 @@
       real(kind=rk), intent(in)           :: T, rhoa
       type (type_params), intent(in)      :: params
       Ta = rtbis(Taroot,1e-5_rk,1e5_rk,1e-5_rk,params,T,rhoa)
-      !Ta = Taroot(T,T,params)!
     end function Ta
-
-    real(kind=rk) function Ta_seq_fi(T,params,rhooverna)
-      implicit none
-      real(kind=rk), intent(in)           :: T, rhooverna
-      type (type_params), intent(in)      :: params
-      Ta_seq_fi = rtbis(Taroot_seq_fi,1e-6_rk,100.0_rk,1e-10_rk,params,T,rhooverna)
-    end function Ta_seq_fi
-
-    real(kind=rk) function Taroot_seq_fi(Ta,T,params,rhoovern)
-      implicit none
-      real(kind=rk), intent(in)           :: Ta, T,rhoovern
-      type (type_params), intent(in)      :: params
-
-      Taroot_seq_fi = rhoeqneq(Ta,params%ma)-rhoovern
-    end function Taroot_seq_fi
 
     FUNCTION rtbis(func,x1,x2,xacc,params, T,rhoprime)
     IMPLICIT NONE
@@ -66,3 +50,19 @@
     end do
     call abort_it("rtbis: too many bisections")
     END FUNCTION rtbis
+
+    ! we don't use these anymore but assume T_ALPs=T_SM in sequential freeze-in
+    real(kind=rk) function Ta_seq_fi(T,params,rhooverna)
+      implicit none
+      real(kind=rk), intent(in)           :: T, rhooverna
+      type (type_params), intent(in)      :: params
+      Ta_seq_fi = rtbis(Taroot_seq_fi,1e-6_rk,100.0_rk,1e-10_rk,params,T,rhooverna)
+    end function Ta_seq_fi
+
+    real(kind=rk) function Taroot_seq_fi(Ta,T,params,rhoovern)
+      implicit none
+      real(kind=rk), intent(in)           :: Ta, T,rhoovern
+      type (type_params), intent(in)      :: params
+
+      Taroot_seq_fi = rhoeqneq(Ta,params%ma)-rhoovern
+    end function Taroot_seq_fi

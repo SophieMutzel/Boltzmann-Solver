@@ -1,3 +1,4 @@
+! module containing important cosmological quantities: Hubble rate, entropy, energy desity etc.
 module module_cosmo
   use module_precision
   use module_utils

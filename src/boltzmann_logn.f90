@@ -1,3 +1,4 @@
+! rhs of Boltzmann equations, solving log10(n)
 subroutine boltzmann_logn( N, lz, Y, Ynew, params, argsint )
   implicit none
   real(kind=rk), intent(in)                   :: lz
@@ -41,30 +42,23 @@ subroutine boltzmann_logn( N, lz, Y, Ynew, params, argsint )
     ! neq,a(z')
     neqazp(i) = neq(Tp(i), ma, ga)
     ! HS interaction
-    ! argsint%g = params%gaxx(i)
     call sigmav( Tp(i), params, argsint, "aaxx", sv_aaxx(i) )
     call sigmav( Tp(i), params, argsint, "xxaa", sv_xxaa(i) )
     sv_aaxx(i) = sv_aaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
     sv_xxaa(i) = sv_xxaa(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)*params%gaxx(i)
     ! SM axion interaction
-    ! argsint%g = params%gaff(i)
     call gamma_r_new( T, argsint, "agffth", gam_agff(i) )
-    !call gamma_r_new( T, argsint, "agff", gam_agff(i) )
     gam_agff(i) = gam_agff(i)*params%gaff(i)*params%gaff(i)
-    !gam_afgf(i) = 0.0_rk
 
     nz = size(params%gam_afgf,2)
     call interp_linear(nz, params%gam_afgf(1,:),params%gam_afgf(2,:),lz, gam_afgf(i))
     !call gamma_r_new( T, argsint, "afgfth", gam_afgf(i) )
     gam_afgf(i) = gam_afgf(i)*params%gaff(i)*params%gaff(i)
     ! SM DM interaction
-    ! argsint%g = params%gaxx(i)*params%gaff(i)
     call gamma_r_new( T, argsint, "xxffth", gam_xxff(i) )
-    !call gamma_r_new( T, argsint, "xxff", gam_xxff(i) )
     gam_xxff(i) = gam_xxff(i)*params%gaxx(i)*params%gaff(i)*params%gaxx(i)*params%gaff(i)
     ! inverse decay ff->a
     ffa(i) = gammav(T, argsint, "affth")*params%gaff(i)*params%gaff(i)
-    !ffa(i)=0.0_rk
   end do
 
   select case (params%regime)
@@ -76,14 +70,10 @@ subroutine boltzmann_logn( N, lz, Y, Ynew, params, argsint )
       rhs(1,:) =  - 3.0_rk +  ((-sv_xxaa*q10(1,:)+sv_aaxx* 10**(2.0_rk*q(2,:)-q(1,:)))/H+ gam_xxff/q10(1,:)/H)
       rhs(2,:) =  - 3.0_rk + (sv_xxaa*(10**(2.0_rk*q(1,:)-q(2,:))- neqzp*neqzp/neqazp/neqazp*q10(2,:)))/H+ (gam_agff + 2.0_rk*gam_afgf + ffa*neqazp)/q10(2,:)/H
     end if
-!    if ((sv_aaxx(1)*neqazp(1)/H<=1.0_rk) ) then
-!      write(*,*) Tp/T,  sv_aaxx*neqazp/H
-!      !stop
-!    end if
 
     do i = 1, params%N
       ! axions and DM in equilibrium and source term small
-      if (Tp(i)>0.0_rk) then
+      if (Tp(i)>mx) then
         ! p,eq,a(T')
         peqaTp = peq(Tp(i),ma,ga)
         ! p,eq,DM(T')
@@ -94,8 +84,8 @@ subroutine boltzmann_logn( N, lz, Y, Ynew, params, argsint )
       else
         rhoeqneqDM = rhoeqneq(Tp(i),mx)
         if (Tp(i)>ma) then
-!        ! p = peq(T')/neq(T')*n=T'*n for MB
-!        ! p,eq,a(T')
+        ! p = peq(T')/neq(T')*n=T'*n for MB
+        ! p,eq,a(T')
           peqaTp = peq(Tp(i),ma,ga)
           rhoplusp = 3.0_rk*(rhoeqaTp + peqaTp + rhoeqneqDM*q10(1,i) + Tp(i)*q10(1,i) )
           rhs(3,i) = l10*( -rhoplusp + params%gaff(i)*params%gaff(i)*drhoa/H &
@@ -103,9 +93,9 @@ subroutine boltzmann_logn( N, lz, Y, Ynew, params, argsint )
                     /(q10(1,i)*drhoeqneq( Tp(i), mx ) + drhoeq(Tp(i),ma,ga))
         else
           rhoeqneqa = rhoeqneq(Tp(i),ma)
-!          ! both rho/n(T')
+          ! both rho/n(T')
           rhoplusp = 3.0_rk*(rhoeqneqa*q10(2,i) + rhoeqneqDM*q10(1,i) + Tp(i)*(q10(1,i)+q10(2,i)) )
-!          ! both rho/n(T')
+          ! both rho/n(T')
           rhs(3,i) = l10*( -rhoplusp + params%gaff(i)*params%gaff(i)*drhoa/H &
                     - ( rhoeqneqa*q10(2,i)*rhs(2,i) + rhoeqneqDM*q10(1,i)*rhs(1,i))) &
                     /(q10(1,i)*drhoeqneq( Tp(i), mx ) + q10(2,i)*drhoeqneq( Tp(i), ma ))
